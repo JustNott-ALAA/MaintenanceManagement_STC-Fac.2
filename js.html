@@ -1,0 +1,593 @@
+<script>
+  const i18n = {
+    th: {
+      appTitle: "Maintenance System",
+      appTitleShort: "MMS Fac2",
+      login: "เข้าสู่ระบบ",
+      register: "สมัครใช้งาน",
+      username: "Username",
+      password: "Password",
+      loginBtn: "เข้าสู่ระบบ",
+      registerTitle: "สมัครใช้งาน",
+      newUsername: "ชื่อผู้ใช้ใหม่",
+      newPassword: "รหัสผ่านใหม่",
+      registerBtn: "Register",
+      menuDashboard: "หน้าหลัก (Dashboard)",
+      menuCreateTicket: "แจ้งซ่อม",
+      menuTicketList: "รายการงานซ่อม",
+      menuSpareParts: "สถานะอะไหล่",
+      menuLogout: "ออกจากระบบ",
+      createTicketTitle: "ฟอร์มแจ้งซ่อม",
+      selectMachine: "เลือกเครื่องจักร (Line)",
+      issueDesc: "ปัญหาที่พบ / อาการเสีย",
+      urgency: "ความเร่งด่วน",
+      urgNormal: "ปกติ (Normal)",
+      urgUrgent: "ด่วน (Urgent)",
+      urgCritical: "ด่วนมาก (Critical)",
+      submitTicket: "ส่งใบแจ้งซ่อม",
+      dashboardTitle: "รายชื่อเครื่องจักรและการบำรุงรักษา",
+      ticketListTitle: "รายการแจ้งซ่อมทั้งหมด",
+      sparePartsTitle: "สถานะอะไหล่",
+      requestSparePart: "ขอเบิกอะไหล่",
+      translatorTitle: "เครื่องมือช่วยแปลเป็นภาษาอังกฤษ",
+      translatorPlaceholder: "พิมพ์ปัญหาภาษาไทย...",
+      btnTranslate: "แปล (Translate)",
+      translatorHint: "* ระบบจะนำคำแปลภาษาอังกฤษไปใส่ในช่องด้านล่างอัตโนมัติ",
+      issueDescPlaceholder: "English only please...",
+      engOnlyPlaceholder: "English only",
+      errorEnglishOnly: "* กรุณากรอกเป็นภาษาอังกฤษเท่านั้น"
+    },
+    en: {
+      appTitle: "Maintenance System",
+      appTitleShort: "MMS Fac2",
+      login: "Login",
+      register: "Register",
+      username: "Username",
+      password: "Password",
+      loginBtn: "Login",
+      registerTitle: "Create Account",
+      newUsername: "New Username",
+      newPassword: "New Password",
+      registerBtn: "Register",
+      menuDashboard: "Dashboard",
+      menuCreateTicket: "Create Ticket",
+      menuTicketList: "Ticket List",
+      menuSpareParts: "Spare Parts",
+      menuLogout: "Logout",
+      createTicketTitle: "Create Ticket Form",
+      selectMachine: "Select Machine (Line)",
+      issueDesc: "Issue / Problem",
+      urgency: "Urgency",
+      urgNormal: "Normal",
+      urgUrgent: "Urgent",
+      urgCritical: "Critical",
+      submitTicket: "Submit Ticket",
+      dashboardTitle: "Machine & Maintenance List",
+      ticketListTitle: "All Tickets",
+      sparePartsTitle: "Spare Parts Status",
+      requestSparePart: "Request Part",
+      translatorTitle: "English Translation Tool",
+      translatorPlaceholder: "Type your problem here...",
+      btnTranslate: "Translate",
+      translatorHint: "* Translation will automatically be placed below",
+      issueDescPlaceholder: "English only please...",
+      engOnlyPlaceholder: "English only",
+      errorEnglishOnly: "* English letters, numbers, and basic punctuation only"
+    },
+    ko: {
+      appTitle: "유지보수 시스템",
+      appTitleShort: "MMS Fac2",
+      login: "로그인",
+      register: "회원가입",
+      username: "사용자 이름",
+      password: "비밀번호",
+      loginBtn: "로그인",
+      registerTitle: "회원가입",
+      newUsername: "새 사용자 이름",
+      newPassword: "새 비밀번호",
+      registerBtn: "가입하기",
+      menuDashboard: "대시보드",
+      menuCreateTicket: "수리 요청",
+      menuTicketList: "수리 목록",
+      menuSpareParts: "부품 상태",
+      menuLogout: "로그아웃",
+      createTicketTitle: "수리 요청 양식",
+      selectMachine: "기계 선택 (Line)",
+      issueDesc: "문제 / 증상",
+      urgency: "긴급도",
+      urgNormal: "보통",
+      urgUrgent: "긴급",
+      urgCritical: "매우 긴급",
+      submitTicket: "제출",
+      dashboardTitle: "기계 및 유지보수 목록",
+      ticketListTitle: "모든 수리 요청",
+      sparePartsTitle: "부품 상태",
+      requestSparePart: "부품 요청",
+      translatorTitle: "영어 번역 도구",
+      translatorPlaceholder: "문제를 한국어로 입력하세요...",
+      btnTranslate: "번역 (Translate)",
+      translatorHint: "* 번역된 내용이 아래 입력란에 자동으로 들어갑니다",
+      issueDescPlaceholder: "영어로만 작성해주세요...",
+      engOnlyPlaceholder: "영어로만",
+      errorEnglishOnly: "* 영어만 입력 가능합니다"
+    }
+  };
+
+  function changeLanguage(lang) {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (i18n[lang] && i18n[lang][key]) {
+        el.innerText = i18n[lang][key];
+      }
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const key = el.getAttribute('data-i18n-placeholder');
+      if (i18n[lang] && i18n[lang][key]) {
+        el.setAttribute('placeholder', i18n[lang][key]);
+      }
+    });
+  }
+
+  function isEnglishOnly(str) {
+    // Allows English letters, numbers, and basic punctuation
+    return /^[\x20-\x7E\r\n]*$/.test(str);
+  }
+
+  let currentUser = null;
+  let allMachines = [];
+  let allTickets = [];
+
+  // --- Utility: Show/Hide Loading ---
+  function showLoading() {
+    document.getElementById('loadingOverlay').classList.remove('d-none');
+  }
+  function hideLoading() {
+    document.getElementById('loadingOverlay').classList.add('d-none');
+  }
+
+  // --- Initialize App ---
+  document.addEventListener('DOMContentLoaded', () => {
+    // Check saved language on load
+    const savedLang = localStorage.getItem('mms_lang') || 'th';
+    document.querySelectorAll('.langSelect').forEach(s => s.value = savedLang);
+    changeLanguage(savedLang);
+
+    // Handle select change
+    document.querySelectorAll('.langSelect').forEach(select => {
+      select.addEventListener('change', (e) => {
+        const lang = e.target.value;
+        document.querySelectorAll('.langSelect').forEach(s => s.value = lang);
+        changeLanguage(lang);
+        localStorage.setItem('mms_lang', lang);
+      });
+    });
+
+    // Session check (dummy)
+    let savedUser = sessionStorage.getItem('mms_user');
+    if (savedUser) {
+      currentUser = JSON.parse(savedUser);
+      showMainApp();
+    }
+  });
+
+  // --- Login Form Submit ---
+  document.getElementById('loginForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    let u = document.getElementById('username').value;
+    let p = document.getElementById('password').value;
+    
+    showLoading();
+    google.script.run.withSuccessHandler((res) => {
+      hideLoading();
+      if (res.success) {
+        currentUser = res;
+        sessionStorage.setItem('mms_user', JSON.stringify(res));
+        showMainApp();
+      } else {
+        Swal.fire({ icon: 'error', title: 'Error', text: res.message });
+      }
+    }).login(u, p);
+  });
+
+  // --- Toggle Login/Register Forms ---
+  document.getElementById('toggleLoginBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('toggleLoginBtn').classList.add('active-toggle-login');
+    document.getElementById('toggleLoginBtn').classList.remove('text-muted');
+    document.getElementById('toggleRegisterBtn').classList.remove('active-toggle-register');
+    document.getElementById('toggleRegisterBtn').classList.add('text-muted');
+    
+    document.getElementById('loginForm').classList.remove('d-none');
+    document.getElementById('registerForm').classList.add('d-none');
+  });
+
+  document.getElementById('toggleRegisterBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('toggleRegisterBtn').classList.add('active-toggle-register');
+    document.getElementById('toggleRegisterBtn').classList.remove('text-muted');
+    document.getElementById('toggleLoginBtn').classList.remove('active-toggle-login');
+    document.getElementById('toggleLoginBtn').classList.add('text-muted');
+    
+    document.getElementById('registerForm').classList.remove('d-none');
+    document.getElementById('loginForm').classList.add('d-none');
+  });
+
+  // --- Register Form Submit ---
+  document.getElementById('registerForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    let u = document.getElementById('regUsername').value;
+    let p = document.getElementById('regPassword').value;
+    
+    // Validation: English only for username
+    if (!/^[A-Za-z0-9_]+$/.test(u)) {
+      document.getElementById('regUserError').classList.remove('d-none');
+      return;
+    } else {
+      document.getElementById('regUserError').classList.add('d-none');
+    }
+    
+    showLoading();
+    google.script.run.withSuccessHandler((res) => {
+      hideLoading();
+      if (res.success) {
+        Swal.fire({ icon: 'success', title: 'สำเร็จ', text: res.message });
+        document.getElementById('registerForm').reset();
+        document.getElementById('toggleLoginBtn').click(); // switch back to login
+      } else {
+        Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: res.message });
+      }
+    }).registerUser(u, p);
+  });
+
+  function showMainApp() {
+    document.getElementById('loginPage').classList.add('d-none');
+    document.getElementById('mainApp').classList.remove('d-none');
+    document.getElementById('displayUserName').innerText = currentUser.name;
+    
+    // Load initial data
+    loadMachines();
+    switchPage('dashboard');
+  }
+
+  // --- Logout ---
+  document.getElementById('logoutBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    sessionStorage.removeItem('mms_user');
+    currentUser = null;
+    document.getElementById('mainApp').classList.add('d-none');
+    document.getElementById('loginPage').classList.remove('d-none');
+    document.getElementById('loginForm').reset();
+  });
+
+  // --- SPA Navigation ---
+  const navLinks = document.querySelectorAll('#sidebar .nav-link[data-page]');
+  navLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      let target = e.currentTarget.getAttribute('data-page');
+      
+      // Update active class
+      navLinks.forEach(l => l.classList.remove('active'));
+      e.currentTarget.classList.add('active');
+      
+      switchPage(target);
+      
+      // On mobile, close sidebar after clicking
+      if (window.innerWidth <= 768) {
+        document.getElementById('sidebar').classList.remove('mobile-show');
+      }
+    });
+  });
+
+  function switchPage(pageId) {
+    document.querySelectorAll('.page-section').forEach(p => p.classList.add('d-none'));
+    document.getElementById('page-' + pageId).classList.remove('d-none');
+    
+    // Refresh data based on page
+    if (pageId === 'dashboard' || pageId === 'createTicket') loadMachines();
+    if (pageId === 'updateTicket') loadTickets();
+  }
+
+  // --- Sidebar Toggle ---
+  document.getElementById('sidebarCollapse')?.addEventListener('click', () => {
+    document.getElementById('sidebar').classList.toggle('mobile-show');
+  });
+  document.getElementById('toggleSidebar')?.addEventListener('click', () => {
+    document.getElementById('sidebar').classList.toggle('collapsed');
+    document.getElementById('content').classList.toggle('expanded');
+  });
+
+  // --- Load Data: Machines ---
+  function loadMachines() {
+    showLoading();
+    google.script.run.withSuccessHandler((machines) => {
+      allMachines = machines;
+      hideLoading();
+      
+      // Render Dashboard
+      const mList = document.getElementById('machineList');
+      mList.innerHTML = '';
+      
+      // Render Dropdown
+      const mSelect = document.getElementById('selMachine');
+      mSelect.innerHTML = '<option value="">-- กรุณาเลือก --</option>';
+
+      machines.forEach(m => {
+        // Dropdown
+        mSelect.innerHTML += `<option value="${m.id}">${m.name}</option>`;
+        
+        // Card (Simplified since we only have Line from Machine List)
+        mList.innerHTML += `
+          <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card shadow-sm border-0 rounded-4 h-100">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                  <div>
+                    <h5 class="fw-bold mb-1"><i class="fas fa-industry me-2 text-primary"></i> ${m.name}</h5>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    }).getMachines();
+  }
+
+  // --- Load Data: Tickets ---
+  function loadTickets() {
+    showLoading();
+    google.script.run.withSuccessHandler((tickets) => {
+      allTickets = tickets;
+      hideLoading();
+      
+      const tList = document.getElementById('ticketList');
+      tList.innerHTML = '';
+      
+      if(tickets.length === 0) {
+        tList.innerHTML = `<div class="col-12 text-center text-muted py-5">ไม่มีข้อมูลใบแจ้งซ่อม</div>`;
+        return;
+      }
+
+      tickets.forEach(t => {
+        let badgeClass = 'bg-secondary';
+        if (t.Status && t.Status.includes('รอดำเนินการ')) badgeClass = 'bg-danger';
+        else if (t.Status && t.Status.includes('กำลังซ่อม')) badgeClass = 'bg-primary';
+        else if (t.Status && t.Status.includes('รออะไหล่')) badgeClass = 'bg-warning text-dark';
+        else if (t.Status && t.Status.includes('เสร็จสิ้น')) badgeClass = 'bg-success';
+
+        let dateStr = new Date(t.Timestamp).toLocaleString('th-TH');
+
+        tList.innerHTML += `
+          <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card shadow-sm border-0 rounded-4 h-100 cursor-pointer" onclick="viewTicketDetail('${t.Ticket_ID}')" style="cursor: pointer;">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <span class="fw-bold text-primary">${t.Ticket_ID}</span>
+                  <span class="badge ${badgeClass} status-badge">${t.Status}</span>
+                </div>
+                <h6 class="fw-bold text-truncate">${t.Machine_ID}</h6>
+                <p class="small text-muted mb-3 text-truncate">${t.Issue}</p>
+                <div class="d-flex justify-content-between align-items-center mt-auto">
+                  <small class="text-muted"><i class="fas fa-clock me-1"></i> ${dateStr}</small>
+                  <small class="fw-bold"><i class="fas fa-user me-1"></i> ${t.Reporter}</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    }).getTickets();
+  }
+
+  // --- Translate Tool ---
+  document.getElementById('btnTranslate')?.addEventListener('click', () => {
+    let text = document.getElementById('transInput').value;
+    if (!text) return;
+    
+    let btn = document.getElementById('btnTranslate');
+    let oldHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>...';
+    btn.disabled = true;
+
+    google.script.run
+      .withSuccessHandler((res) => {
+        btn.innerHTML = oldHtml;
+        btn.disabled = false;
+        if (res && typeof res === 'string' && !res.startsWith('Error:')) {
+          document.getElementById('issueDesc').value = res;
+          document.getElementById('issueError').classList.add('d-none');
+        } else {
+          Swal.fire('Error', res || 'Translation Failed', 'error');
+        }
+      })
+      .withFailureHandler((err) => {
+        btn.innerHTML = oldHtml;
+        btn.disabled = false;
+        Swal.fire('Permission Error', 'กรุณากลับไปที่ Apps Script Editor แล้วกด Run ฟังก์ชัน translateToEnglish หรือ setupDatabase 1 ครั้ง เพื่อกดยอมรับสิทธิ์ (Review Permissions) การใช้งานระบบแปลภาษาครับ\\n\\n' + err.message, 'error');
+      })
+      .translateToEnglish(text);
+  });
+
+  // --- Create Ticket ---
+  document.getElementById('createTicketForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    let issueText = document.getElementById('issueDesc').value;
+    // Validation: English only for issue description
+    if (!isEnglishOnly(issueText)) {
+      document.getElementById('issueError').classList.remove('d-none');
+      return;
+    } else {
+      document.getElementById('issueError').classList.add('d-none');
+    }
+
+    let data = {
+      machineId: document.getElementById('selMachine').value,
+      issue: issueText,
+      urgency: document.getElementById('urgency').value,
+      reporter: currentUser.name
+    };
+    
+    showLoading();
+    google.script.run.withSuccessHandler((res) => {
+      hideLoading();
+      if(res.success) {
+        Swal.fire({ icon: 'success', title: 'สำเร็จ', text: `สร้างใบงาน ${res.ticketId} เรียบร้อย` });
+        document.getElementById('createTicketForm').reset();
+        
+        // Go to Ticket List
+        document.querySelector('#sidebar .nav-link[data-page="updateTicket"]').click();
+      }
+    }).createTicket(data);
+  });
+
+  // --- View Ticket Detail ---
+  function viewTicketDetail(ticketId) {
+    showLoading();
+    google.script.run.withSuccessHandler((data) => {
+      hideLoading();
+      
+      // Switch Page manually
+      document.querySelectorAll('.page-section').forEach(p => p.classList.add('d-none'));
+      document.getElementById('page-ticketDetail').classList.remove('d-none');
+      
+      // Fill Info
+      const t = data.ticket;
+      document.getElementById('detailTicketId').innerText = t.Ticket_ID;
+      document.getElementById('detailMachine').innerText = t.Machine_ID;
+      document.getElementById('detailIssue').innerText = t.Issue;
+      document.getElementById('detailReporter').innerText = t.Reporter;
+      
+      let bClass = (t.Status && t.Status.includes('เสร็จสิ้น')) ? 'bg-success' : 'bg-warning';
+      document.getElementById('detailStatus').innerText = t.Status;
+      document.getElementById('detailStatus').className = `badge ${bClass} text-dark`;
+      
+      // Update form init
+      document.getElementById('updTicketId').value = t.Ticket_ID;
+      document.getElementById('updStatus').value = t.Status;
+      document.getElementById('updDetails').value = '';
+      document.getElementById('updBeforeImage').value = '';
+      document.getElementById('updAfterImage').value = '';
+
+      // Build Timeline
+      const tlContainer = document.getElementById('timelineContainer');
+      tlContainer.innerHTML = '';
+      
+      let allEvents = [];
+      data.history.forEach(h => allEvents.push({ type: 'status', time: new Date(h.Timestamp), data: h }));
+      data.repairs.forEach(r => allEvents.push({ type: 'repair', time: new Date(r.Timestamp), data: r }));
+      
+      // Sort desc
+      allEvents.sort((a,b) => b.time - a.time);
+
+      if(allEvents.length === 0) tlContainer.innerHTML = '<p class="text-muted">ยังไม่มีประวัติการดำเนินการ</p>';
+
+      allEvents.forEach(ev => {
+        let dateStr = ev.time.toLocaleString('th-TH');
+        if(ev.type === 'status') {
+          let h = ev.data;
+          tlContainer.innerHTML += `
+            <div class="timeline-item">
+              <div class="timeline-marker bg-secondary"></div>
+              <div class="timeline-content">
+                <span class="timeline-date">${dateStr} - ${h.Update_By}</span>
+                <p class="mb-0 fw-bold">เปลี่ยนสถานะ: <span class="text-muted">${h.Old_Status}</span> <i class="fas fa-arrow-right mx-1"></i> <span class="text-primary">${h.New_Status}</span></p>
+              </div>
+            </div>
+          `;
+        } else {
+          let r = ev.data;
+          let imgHtml = '';
+          if(r.Before_Image) imgHtml += `<a href="${r.Before_Image}" target="_blank"><img src="${r.Before_Image}" class="img-thumbnail me-2 mt-2" style="height:60px"></a>`;
+          if(r.After_Image) imgHtml += `<a href="${r.After_Image}" target="_blank"><img src="${r.After_Image}" class="img-thumbnail mt-2" style="height:60px"></a>`;
+          
+          tlContainer.innerHTML += `
+            <div class="timeline-item">
+              <div class="timeline-marker bg-primary"></div>
+              <div class="timeline-content">
+                <span class="timeline-date">${dateStr} - ${r.Repairer}</span>
+                <p class="mb-1 text-primary fw-bold"><i class="fas fa-wrench me-1"></i> อัปเดตงานซ่อม</p>
+                ${r.Repair_Details ? `<p class="mb-0 small">${r.Repair_Details}</p>` : ''}
+                <div class="timeline-images">${imgHtml}</div>
+              </div>
+            </div>
+          `;
+        }
+      });
+      
+    }).getTicketDetails(ticketId);
+  }
+
+  // --- Back Button ---
+  document.getElementById('backToTickets').addEventListener('click', () => {
+    switchPage('updateTicket');
+  });
+
+  // --- File to Base64 ---
+  function getBase64(file) {
+    return new Promise((resolve, reject) => {
+      if(!file) { resolve(null); return; }
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
+  }
+
+  // --- Submit Update (Auto-Reload Timeline) ---
+  document.getElementById('updateTicketForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    let btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังอัปโหลด...';
+
+    let fileBefore = document.getElementById('updBeforeImage').files[0];
+    let fileAfter = document.getElementById('updAfterImage').files[0];
+    
+    // Convert files to base64
+    let base64Before = await getBase64(fileBefore);
+    let base64After = await getBase64(fileAfter);
+
+    let payload = {
+      ticketId: document.getElementById('updTicketId').value,
+      newStatus: document.getElementById('updStatus').value,
+      repairDetails: document.getElementById('updDetails').value,
+      updateBy: currentUser.name,
+      beforeImageBase64: base64Before,
+      afterImageBase64: base64After
+    };
+
+    google.script.run.withSuccessHandler((res) => {
+      btn.disabled = false;
+      btn.innerHTML = 'บันทึกการอัปเดต';
+      if(res.success) {
+        Swal.fire({ icon: 'success', title: 'อัปเดตสำเร็จ', timer: 1500, showConfirmButton: false });
+        // Auto-Reload Timeline by calling viewTicketDetail again
+        viewTicketDetail(payload.ticketId);
+      }
+    }).updateTicket(payload);
+  });
+
+  // --- Spare Parts Submit ---
+  document.getElementById('addSparePartForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    let data = {
+      ticketId: document.getElementById('spTicketId').value,
+      partName: document.getElementById('spName').value,
+      qty: document.getElementById('spQty').value,
+      status: document.getElementById('spStatus').value
+    };
+    
+    showLoading();
+    google.script.run.withSuccessHandler((res) => {
+      hideLoading();
+      if(res.success) {
+        Swal.fire('สำเร็จ', 'บันทึกข้อมูลอะไหล่เรียบร้อย', 'success');
+        document.getElementById('addSparePartForm').reset();
+        bootstrap.Modal.getInstance(document.getElementById('addSparePartModal')).hide();
+        // Option: refresh spare parts list if we implemented it
+      }
+    }).addSparePart(data);
+  });
+</script>

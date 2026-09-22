@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maintenance Management System</title>
+  
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <!-- Custom CSS -->
+  <?!= include('css'); ?>
+</head>
+<body>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay d-none">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Login Page -->
+  <div id="loginPage" class="d-flex align-items-center justify-content-center vh-100 bg-light">
+    <div class="card shadow-lg p-4 login-card rounded-4">
+      <div class="text-center mb-4">
+        <i class="fas fa-tools fa-3x text-primary mb-3"></i>
+        <h4 class="fw-bold" data-i18n="appTitle">Maintenance System</h4>
+      </div>
+
+      <!-- Language Switcher Login -->
+      <div class="text-center mb-3">
+        <select class="langSelect form-select form-select-sm w-auto d-inline-block border-0 bg-light fw-bold text-primary">
+          <option value="th">🇹🇭 TH</option>
+          <option value="en">🇬🇧 EN</option>
+          <option value="ko">🇰🇷 KO</option>
+        </select>
+      </div>
+
+      <!-- Toggle Buttons -->
+      <div class="d-flex mb-4 border rounded-pill overflow-hidden p-1 bg-white">
+        <button id="toggleLoginBtn" class="btn flex-fill rounded-pill fw-bold active-toggle-login" data-i18n="login">เข้าสู่ระบบ</button>
+        <button id="toggleRegisterBtn" class="btn flex-fill rounded-pill fw-bold text-muted" data-i18n="register">สมัครใช้งาน</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="loginForm">
+        <div class="mb-3">
+          <label class="form-label" data-i18n="username">Username</label>
+          <input type="text" id="username" class="form-control" required>
+        </div>
+        <div class="mb-4">
+          <label class="form-label" data-i18n="password">Password</label>
+          <input type="password" id="password" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100 rounded-pill py-2 fw-bold" data-i18n="loginBtn">เข้าสู่ระบบ</button>
+      </form>
+
+      <!-- Register Form -->
+      <form id="registerForm" class="d-none">
+        <h5 class="fw-bold mb-3" data-i18n="registerTitle">สมัครใช้งาน</h5>
+        <div class="mb-3">
+          <label class="form-label" data-i18n="newUsername">ชื่อผู้ใช้ใหม่</label>
+          <input type="text" id="regUsername" class="form-control" required data-i18n-placeholder="engOnlyPlaceholder">
+          <div class="form-text text-danger small d-none" id="regUserError" data-i18n="errorEnglishOnly">* กรุณากรอกเป็นภาษาอังกฤษเท่านั้น</div>
+        </div>
+        <div class="mb-4">
+          <label class="form-label" data-i18n="newPassword">รหัสผ่านใหม่</label>
+          <input type="password" id="regPassword" class="form-control" required>
+        </div>
+        <button type="submit" class="btn w-100 rounded-pill py-2 fw-bold text-white" style="background-color: #6f42c1;" data-i18n="registerBtn">Register</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main App Wrapper -->
+  <div id="mainApp" class="d-none">
+    <!-- Sidebar -->
+    <nav id="sidebar" class="bg-dark text-white p-3 vh-100 position-fixed">
+      <div class="sidebar-header d-flex justify-content-between align-items-center mb-4 mt-2">
+        <h5 class="mb-0 fw-bold"><i class="fas fa-wrench me-2 text-primary"></i> <span class="sidebar-text" data-i18n="appTitleShort">MMS</span></h5>
+        <button id="toggleSidebar" class="btn btn-sm btn-outline-light border-0 d-md-none"><i class="fas fa-times"></i></button>
+      </div>
+      
+      <div class="user-info mb-4 text-center">
+        <div class="avatar bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width:50px;height:50px;font-size:1.5rem;">
+          <i class="fas fa-user"></i>
+        </div>
+        <div class="sidebar-text">
+          <div class="fw-bold" id="displayUserName">User</div>
+          <small class="text-muted">ช่าง/พนักงาน</small>
+        </div>
+      </div>
+
+      <ul class="nav flex-column nav-pills w-100">
+        <li class="nav-item mb-2">
+          <a href="#" class="nav-link text-white active" data-page="dashboard"><i class="fas fa-chart-pie me-2"></i> <span class="sidebar-text" data-i18n="menuDashboard">หน้าหลัก (Dashboard)</span></a>
+        </li>
+        <li class="nav-item mb-2">
+          <a href="#" class="nav-link text-white" data-page="createTicket"><i class="fas fa-plus-circle me-2"></i> <span class="sidebar-text" data-i18n="menuCreateTicket">แจ้งซ่อม</span></a>
+        </li>
+        <li class="nav-item mb-2">
+          <a href="#" class="nav-link text-white" data-page="updateTicket"><i class="fas fa-clipboard-check me-2"></i> <span class="sidebar-text" data-i18n="menuTicketList">รายการงานซ่อม</span></a>
+        </li>
+        <li class="nav-item mb-4">
+          <a href="#" class="nav-link text-white" data-page="spareParts"><i class="fas fa-cogs me-2"></i> <span class="sidebar-text" data-i18n="menuSpareParts">สถานะอะไหล่</span></a>
+        </li>
+        <li class="nav-item mt-auto">
+          <a href="#" class="nav-link text-danger" id="logoutBtn"><i class="fas fa-sign-out-alt me-2"></i> <span class="sidebar-text" data-i18n="menuLogout">ออกจากระบบ</span></a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Page Content -->
+    <div id="content" class="bg-light min-vh-100">
+      
+      <!-- Top Navbar for Mobile -->
+      <nav class="navbar navbar-light bg-white shadow-sm mb-4 px-3 d-md-none rounded-bottom-4 d-flex align-items-center">
+        <button type="button" id="sidebarCollapse" class="btn btn-light border-0">
+          <i class="fas fa-bars"></i>
+        </button>
+        <span class="navbar-brand mb-0 h1 fw-bold text-primary ms-2" data-i18n="appTitleShort">MMS</span>
+        <div class="ms-auto">
+          <select class="langSelect form-select form-select-sm border-0 bg-light fw-bold text-primary">
+            <option value="th">🇹🇭 TH</option>
+            <option value="en">🇬🇧 EN</option>
+            <option value="ko">🇰🇷 KO</option>
+          </select>
+        </div>
+      </nav>
+
+      <div class="container-fluid p-3 p-md-4">
+        
+        <!-- Dashboard Page -->
+        <div id="page-dashboard" class="page-section">
+          <h4 class="fw-bold mb-4" data-i18n="dashboardTitle">รายชื่อเครื่องจักรและการบำรุงรักษา</h4>
+          <div class="row" id="machineList">
+            <!-- Machine cards injected via JS -->
+          </div>
+        </div>
+
+        <!-- Create Ticket Page -->
+        <div id="page-createTicket" class="page-section d-none">
+          <h4 class="fw-bold mb-4" data-i18n="createTicketTitle">ฟอร์มแจ้งซ่อม</h4>
+          <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-body p-4">
+              <form id="createTicketForm">
+                <div class="mb-3">
+                  <label class="form-label fw-bold" data-i18n="selectMachine">เลือกเครื่องจักร (Line)</label>
+                  <select id="selMachine" class="form-select" required>
+                    <option value="">-- กรุณาเลือก --</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label fw-bold" data-i18n="issueDesc">ปัญหาที่พบ / อาการเสีย</label>
+                  
+                  <!-- Translation Tool -->
+                  <div class="bg-light p-3 rounded mb-2 border">
+                    <label class="form-label small fw-bold text-primary" data-i18n="translatorTitle"><i class="fas fa-language me-1"></i> เครื่องมือช่วยแปลเป็นภาษาอังกฤษ</label>
+                    <div class="input-group input-group-sm mb-2">
+                      <input type="text" id="transInput" class="form-control" data-i18n-placeholder="translatorPlaceholder">
+                      <button type="button" class="btn btn-outline-primary fw-bold" id="btnTranslate"><i class="fas fa-language"></i> <span data-i18n="btnTranslate">Translate</span></button>
+                    </div>
+                    <small class="text-muted" data-i18n="translatorHint">* ระบบจะนำคำแปลภาษาอังกฤษไปใส่ในช่องด้านล่างอัตโนมัติ</small>
+                  </div>
+
+                  <textarea id="issueDesc" class="form-control" rows="3" required data-i18n-placeholder="issueDescPlaceholder"></textarea>
+                  <div class="form-text text-danger small d-none" id="issueError" data-i18n="errorEnglishOnly">* กรุณากรอกเป็นภาษาอังกฤษเท่านั้น</div>
+                </div>
+                <div class="mb-4">
+                  <label class="form-label fw-bold" data-i18n="urgency">ความเร่งด่วน</label>
+                  <select id="urgency" class="form-select" required>
+                    <option value="" disabled selected data-i18n="urgencyPlaceholder">-- กรุณาเลือก --</option>
+                    <option value="ปกติ (Normal / 보통)">ปกติ (Normal / 보통)</option>
+                    <option value="ด่วน (Urgent / 긴급)">ด่วน (Urgent / 긴급)</option>
+                    <option value="ด่วนมาก (Critical / 매우 긴급)">ด่วนมาก (Critical / 매우 긴급)</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold"><i class="fas fa-paper-plane me-2"></i> <span data-i18n="submitTicket">ส่งใบแจ้งซ่อม</span></button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Update Ticket (Ticket List) Page -->
+        <div id="page-updateTicket" class="page-section d-none">
+          <h4 class="fw-bold mb-4" data-i18n="ticketListTitle">รายการแจ้งซ่อมทั้งหมด</h4>
+          <div id="ticketList" class="row">
+            <!-- Ticket cards injected via JS -->
+          </div>
+        </div>
+
+        <!-- Ticket Detail & Timeline (Hidden initially) -->
+        <div id="page-ticketDetail" class="page-section d-none">
+          <button class="btn btn-outline-secondary btn-sm mb-3 rounded-pill" id="backToTickets"><i class="fas fa-arrow-left me-1"></i> กลับไปหน้ารายการ</button>
+          
+          <div class="row">
+            <!-- Ticket Info -->
+            <div class="col-lg-5 mb-4">
+              <div class="card shadow-sm border-0 rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 pb-0">
+                  <h5 class="fw-bold text-primary mb-0" id="detailTicketId">TK000000</h5>
+                </div>
+                <div class="card-body">
+                  <p class="mb-1 text-muted small">เครื่องจักร</p>
+                  <p class="fw-bold mb-3" id="detailMachine">-</p>
+                  
+                  <p class="mb-1 text-muted small">อาการเสีย</p>
+                  <p class="mb-3" id="detailIssue">-</p>
+                  
+                  <div class="d-flex justify-content-between mb-3">
+                    <div>
+                      <p class="mb-0 text-muted small">ผู้แจ้ง</p>
+                      <p class="fw-bold mb-0" id="detailReporter">-</p>
+                    </div>
+                    <div class="text-end">
+                      <p class="mb-0 text-muted small">สถานะปัจจุบัน</p>
+                      <span class="badge bg-warning text-dark" id="detailStatus">-</span>
+                    </div>
+                  </div>
+
+                  <hr>
+                  
+                  <!-- Update Form -->
+                  <h6 class="fw-bold mb-3"><i class="fas fa-edit me-2"></i> อัปเดตงานซ่อม (สำหรับช่าง)</h6>
+                  <form id="updateTicketForm">
+                    <input type="hidden" id="updTicketId">
+                    <div class="mb-3">
+                      <label class="form-label small fw-bold">เปลี่ยนสถานะ</label>
+                      <select id="updStatus" class="form-select form-select-sm">
+                        <option value="รอดำเนินการ (Pending / 대기중)">รอดำเนินการ (Pending / 대기중)</option>
+                        <option value="กำลังซ่อม (In Progress / 진행중)">กำลังซ่อม (In Progress / 진행중)</option>
+                        <option value="รออะไหล่ (Waiting for Part / 부품 대기중)">รออะไหล่ (Waiting for Part / 부품 대기중)</option>
+                        <option value="เสร็จสิ้น (Completed / 완료)">เสร็จสิ้น (Completed / 완료)</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label small fw-bold">รายละเอียดการซ่อม</label>
+                      <textarea id="updDetails" class="form-control form-control-sm" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="row mb-3">
+                      <div class="col-6">
+                        <label class="form-label small fw-bold"><i class="fas fa-camera me-1"></i> ภาพก่อนซ่อม</label>
+                        <input class="form-control form-control-sm" type="file" id="updBeforeImage" accept="image/*">
+                        <small class="text-muted" style="font-size:0.7rem;">(ไม่เกิน 2MB)</small>
+                      </div>
+                      <div class="col-6">
+                        <label class="form-label small fw-bold"><i class="fas fa-camera me-1"></i> ภาพหลังซ่อม</label>
+                        <input class="form-control form-control-sm" type="file" id="updAfterImage" accept="image/*">
+                        <small class="text-muted" style="font-size:0.7rem;">(ไม่เกิน 2MB)</small>
+                      </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success btn-sm w-100 rounded-pill fw-bold">บันทึกการอัปเดต</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="col-lg-7">
+              <div class="card shadow-sm border-0 rounded-4 h-100">
+                <div class="card-body p-4">
+                  <h5 class="fw-bold mb-4"><i class="fas fa-history me-2"></i> ประวัติการดำเนินการ (Timeline)</h5>
+                  <div class="timeline" id="timelineContainer">
+                    <!-- Timeline items injected here -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spare Parts Page -->
+        <div id="page-spareParts" class="page-section d-none">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold mb-0" data-i18n="sparePartsTitle">สถานะอะไหล่</h4>
+            <button class="btn btn-primary rounded-pill btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#addSparePartModal"><i class="fas fa-plus me-1"></i> <span data-i18n="requestSparePart">ขอเบิกอะไหล่</span></button>
+          </div>
+          
+          <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>ใบงาน</th>
+                      <th>ชื่ออะไหล่</th>
+                      <th>จำนวน</th>
+                      <th>สถานะ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="sparePartsTableBody">
+                    <!-- Data injected via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Spare Part Modal -->
+  <div class="modal fade" id="addSparePartModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 border-0 shadow">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold">แบบฟอร์มขอเบิกอะไหล่</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body pb-4">
+          <form id="addSparePartForm">
+            <div class="mb-3">
+              <label class="form-label small fw-bold">รหัสใบงาน (Ticket ID)</label>
+              <input type="text" id="spTicketId" class="form-control" placeholder="เช่น TK230706-001" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold">ชื่ออะไหล่ / Part Name</label>
+              <input type="text" id="spName" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold">จำนวน</label>
+              <input type="number" id="spQty" class="form-control" min="1" value="1" required>
+            </div>
+            <div class="mb-4">
+              <label class="form-label small fw-bold">สถานะเริ่มต้น</label>
+              <select id="spStatus" class="form-select">
+                <option value="รอขอซื้อ">รอขอซื้อ (Request)</option>
+                <option value="PR/PO">กำลังทำ PR/PO</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold">บันทึกข้อมูล</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.css"></script>
+  
+  <!-- Custom JS -->
+  <?!= include('js'); ?>
+</body>
+</html>
