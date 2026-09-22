@@ -683,8 +683,8 @@
             let m = allMachines.find(x => x.name === t.Machine_ID || x.id === t.Machine_ID);
             if (m && m.details) {
               let parts = [];
-              if (m.details.vendor) parts.push(`Vender: ${m.details.vendor}`);
-              if (m.details.mcModel) parts.push(`M/C Model: ${m.details.mcModel}`);
+              if (m.details.vendor) parts.push(m.details.vendor);
+              if (m.details.mcModel) parts.push(m.details.mcModel);
               if (parts.length > 0) {
                 machineDetailText = `<div class="text-muted fw-normal text-truncate" style="font-size: 0.75rem; margin-top: 2px;">${parts.join(' | ')}</div>`;
               }
@@ -1006,8 +1006,8 @@
     if (machine && machine.details) {
       const d = machine.details;
       let parts = [];
-      if (d.vendor) parts.push(`Vender: ${d.vendor}`);
-      if (d.mcModel) parts.push(`M/C Model: ${d.mcModel}`);
+      if (d.vendor) parts.push(d.vendor);
+      if (d.mcModel) parts.push(d.mcModel);
       if (d.serNo) parts.push(`Ser.No.: ${d.serNo}`);
       if (d.mfgDate) parts.push(`MFG.Date: ${d.mfgDate}`);
       if (d.powerSupply) parts.push(`Power Supply: ${d.powerSupply}`);
