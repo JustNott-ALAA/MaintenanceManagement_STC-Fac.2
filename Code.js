@@ -9,6 +9,11 @@ function getDB() {
 }
 
 function doGet(e) {
+  try {
+    setupAuthDatabase();
+  } catch (err) {
+    Logger.log("Auto-setup error on doGet: " + err.toString());
+  }
   return HtmlService.createTemplateFromFile('index')
       .evaluate()
       .setTitle('Maintenance Management System')
@@ -88,23 +93,37 @@ function setupAuthDatabase() {
     var curHeaders = userSheet.getRange(1, 1, 1, Math.max(userSheet.getLastColumn(), 1)).getValues()[0];
     if (curHeaders.indexOf("password_hash") === -1) {
       var lastRow = userSheet.getLastRow();
+      var migratedUsers = [];
       if (lastRow > 1) {
         var usersData = userSheet.getRange(2, 1, lastRow - 1, curHeaders.length).getValues();
-        userSheet.clear();
-        userSheet.getRange(1, 1, 1, userHeaders.length).setValues([userHeaders]).setFontWeight("bold");
         usersData.forEach(function(row) {
-          var u = row[0];
-          var rawPwd = row[1];
+          var u = (row[0] || "").toString().trim();
+          if (!u) return;
+          var rawPwd = (row[1] || "").toString().trim();
           var role = (row[2] && row[2].toString().toLowerCase() === 'admin') ? 'Admin' : 'User';
-          var hashed = rawPwd ? hashPassword(rawPwd.toString()) : hashPassword("1234");
-          userSheet.appendRow([u, hashed, role, "Active", new Date()]);
+          var hashed = rawPwd ? hashPassword(rawPwd) : hashPassword("1234");
+          migratedUsers.push([u, hashed, role, "Active", new Date()]);
         });
-      } else {
-        userSheet.clear();
-        userSheet.getRange(1, 1, 1, userHeaders.length).setValues([userHeaders]).setFontWeight("bold");
-        userSheet.appendRow(["admin", hashPassword("1234"), "Admin", "Active", new Date()]);
       }
+      userSheet.clear();
+      userSheet.getRange(1, 1, 1, userHeaders.length).setValues([userHeaders]).setFontWeight("bold");
+      migratedUsers.forEach(function(uRow) {
+        userSheet.appendRow(uRow);
+      });
     }
+  }
+
+  // Always ensure 'admin' exists in Users
+  var checkData = userSheet.getDataRange().getValues();
+  var hasAdmin = false;
+  for (var i = 1; i < checkData.length; i++) {
+    if ((checkData[i][0] || "").toString().trim().toLowerCase() === "admin") {
+      hasAdmin = true;
+      break;
+    }
+  }
+  if (!hasAdmin) {
+    userSheet.appendRow(["admin", hashPassword("1234"), "Admin", "Active", new Date()]);
   }
 
   // 2. UsersLogBook sheet
@@ -136,14 +155,24 @@ function hashPassword(password) {
 function loginUser(username, password, clientInfo) {
   var ss = getDB();
   var sheet = ss.getSheetByName("Users");
-  if (!sheet) {
+  var logSheet = ss.getSheetByName("UsersLogBook");
+  
+  // Auto-heal / Auto-setup if missing or old headers
+  if (!sheet || !logSheet) {
     setupAuthDatabase();
     sheet = ss.getSheetByName("Users");
+  } else {
+    var curHeaders = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1)).getValues()[0];
+    if (curHeaders.indexOf("password_hash") === -1) {
+      setupAuthDatabase();
+      sheet = ss.getSheetByName("Users");
+    }
   }
   
   var data = sheet.getDataRange().getValues();
   var uClean = (username || "").toString().trim().toLowerCase();
   var hashed = hashPassword((password || "").toString().trim());
+  var rawPwd = (password || "").toString().trim();
   
   for (var i = 1; i < data.length; i++) {
     var rowUser = (data[i][0] || "").toString().trim().toLowerCase();
@@ -151,23 +180,31 @@ function loginUser(username, password, clientInfo) {
     var rowRole = data[i][2] || "User";
     var rowStatus = data[i][3] || "Active";
     
-    if (rowUser === uClean && rowHash === hashed) {
+    // Support matching both hashed password and legacy plain-text password
+    var isMatch = (rowHash === hashed || rowHash === rawPwd);
+    
+    if (rowUser === uClean && isMatch) {
+      // Auto-upgrade plain-text password to hash
+      if (rowHash !== hashed) {
+        sheet.getRange(i + 1, 2).setValue(hashed);
+      }
+      
       if (rowStatus === "Inactive") {
         return { success: false, message: "บัญชีของคุณถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ" };
       }
       
       // Log to UsersLogBook ONLY on Login Success
       try {
-        var logSheet = ss.getSheetByName("UsersLogBook");
-        if (!logSheet) {
+        var lSheet = ss.getSheetByName("UsersLogBook");
+        if (!lSheet) {
           setupAuthDatabase();
-          logSheet = ss.getSheetByName("UsersLogBook");
+          lSheet = ss.getSheetByName("UsersLogBook");
         }
         var timestamp = new Date();
         var logId = "LOG-" + Utilities.formatDate(timestamp, "Asia/Bangkok", "yyMMdd-HHmmss") + "-" + Math.floor(100 + Math.random() * 900);
         var device = (clientInfo && clientInfo.device) ? clientInfo.device : "";
         var ip = (clientInfo && clientInfo.ip) ? clientInfo.ip : "";
-        logSheet.appendRow([
+        lSheet.appendRow([
           logId,
           timestamp,
           data[i][0],
