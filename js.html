@@ -677,17 +677,32 @@
             dateStr = isNaN(parsedDate.getTime()) ? t.Timestamp : parsedDate.toLocaleString('th-TH');
           }
 
+          // Find machine details
+          let machineDetailText = '';
+          if (t.Machine_ID && typeof allMachines !== 'undefined') {
+            let m = allMachines.find(x => x.name === t.Machine_ID || x.id === t.Machine_ID);
+            if (m && m.details) {
+              let parts = [];
+              if (m.details.vendor) parts.push(`Vender: ${m.details.vendor}`);
+              if (m.details.mcModel) parts.push(`M/C Model: ${m.details.mcModel}`);
+              if (parts.length > 0) {
+                machineDetailText = `<div class="text-muted fw-normal text-truncate" style="font-size: 0.75rem; margin-top: 2px;">${parts.join(' | ')}</div>`;
+              }
+            }
+          }
+
           tList.innerHTML += `
             <div class="col-md-6 col-lg-4 mb-4">
               <div class="card shadow-sm border-0 rounded-4 h-100 cursor-pointer" onclick="viewTicketDetail('${t.Ticket_ID}')" style="cursor: pointer;">
-                <div class="card-body">
+                <div class="card-body d-flex flex-column">
                   <div class="d-flex justify-content-between align-items-center mb-3">
                     <span class="fw-bold text-primary">${t.Ticket_ID}</span>
                     <span class="badge ${badgeClass} status-badge">${t.Status || ''}</span>
                   </div>
-                  <h6 class="fw-bold text-truncate">${t.Machine_ID || '-'}</h6>
-                  <p class="small text-muted mb-3 text-truncate">${t.Issue || '-'}</p>
-                  <div class="d-flex justify-content-between align-items-center mt-auto">
+                  <h6 class="fw-bold text-truncate mb-0">${t.Machine_ID || '-'}</h6>
+                  ${machineDetailText}
+                  <p class="small mb-3 text-truncate mt-2" style="color: #8B0000; font-weight: 500;">${t.Issue || '-'}</p>
+                  <div class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top">
                     <small class="text-muted"><i class="fas fa-clock me-1"></i> ${dateStr}</small>
                     <small class="fw-bold"><i class="fas fa-user me-1"></i> ${t.Reporter || '-'}</small>
                   </div>
