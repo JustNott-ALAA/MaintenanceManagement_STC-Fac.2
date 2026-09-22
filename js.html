@@ -35,7 +35,29 @@
       translatorHint: "* ระบบจะนำคำแปลภาษาอังกฤษไปใส่ในช่องด้านล่างอัตโนมัติ",
       issueDescPlaceholder: "English only please...",
       engOnlyPlaceholder: "English only",
-      errorEnglishOnly: "* กรุณากรอกเป็นภาษาอังกฤษเท่านั้น"
+      errorEnglishOnly: "* กรุณากรอกเป็นภาษาอังกฤษเท่านั้น",
+      menuUserManagement: "จัดการผู้ใช้งาน",
+      userManagementTitle: "จัดการผู้ใช้งาน (User Management)",
+      colUsername: "ชื่อผู้ใช้",
+      colRole: "สิทธิ์",
+      colStatus: "สถานะ",
+      colCreatedAt: "วันที่สมัคร",
+      colActions: "จัดการ",
+      btnRefresh: "รีเฟรช",
+      btnResetPwd: "รีเซ็ตรหัสผ่าน",
+      btnSuspend: "ระงับการใช้งาน",
+      btnActivate: "เปิดใช้งาน",
+      btnChangeRole: "เปลี่ยนสิทธิ์",
+      statusActive: "ใช้งานปกติ",
+      statusInactive: "ถูกระงับ",
+      roleAdmin: "Admin",
+      roleUser: "User",
+      swalResetPwdTitle: "รีเซ็ตรหัสผ่านใหม่",
+      swalResetPwdText: "กรุณาระบุรหัสผ่านใหม่สำหรับ: ",
+      swalConfirm: "ยืนยัน",
+      swalCancel: "ยกเลิก",
+      swalSuccess: "สำเร็จ",
+      swalError: "ผิดพลาด"
     },
     en: {
       appTitle: "Maintenance System",
@@ -72,7 +94,29 @@
       translatorHint: "* Translation will automatically be placed below",
       issueDescPlaceholder: "English only please...",
       engOnlyPlaceholder: "English only",
-      errorEnglishOnly: "* English letters, numbers, and basic punctuation only"
+      errorEnglishOnly: "* English letters, numbers, and basic punctuation only",
+      menuUserManagement: "User Management",
+      userManagementTitle: "User Management",
+      colUsername: "Username",
+      colRole: "Role",
+      colStatus: "Status",
+      colCreatedAt: "Registered Date",
+      colActions: "Actions",
+      btnRefresh: "Refresh",
+      btnResetPwd: "Reset Password",
+      btnSuspend: "Suspend",
+      btnActivate: "Activate",
+      btnChangeRole: "Change Role",
+      statusActive: "Active",
+      statusInactive: "Inactive",
+      roleAdmin: "Admin",
+      roleUser: "User",
+      swalResetPwdTitle: "Reset Password",
+      swalResetPwdText: "Enter new password for: ",
+      swalConfirm: "Confirm",
+      swalCancel: "Cancel",
+      swalSuccess: "Success",
+      swalError: "Error"
     },
     ko: {
       appTitle: "유지보수 시스템",
@@ -109,7 +153,29 @@
       translatorHint: "* 번역된 내용이 아래 입력란에 자동으로 들어갑니다",
       issueDescPlaceholder: "영어로만 작성해주세요...",
       engOnlyPlaceholder: "영어로만",
-      errorEnglishOnly: "* 영어만 입력 가능합니다"
+      errorEnglishOnly: "* 영어만 입력 가능합니다",
+      menuUserManagement: "사용자 관리",
+      userManagementTitle: "사용자 관리",
+      colUsername: "사용자 이름",
+      colRole: "권한",
+      colStatus: "상태",
+      colCreatedAt: "가입일",
+      colActions: "관리",
+      btnRefresh: "새로고침",
+      btnResetPwd: "비밀번호 재설정",
+      btnSuspend: "계정 정지",
+      btnActivate: "계정 활성화",
+      btnChangeRole: "권한 변경",
+      statusActive: "활성",
+      statusInactive: "비활성",
+      roleAdmin: "Admin",
+      roleUser: "User",
+      swalResetPwdTitle: "비밀번호 재설정",
+      swalResetPwdText: "새 비밀번호 입력 대상: ",
+      swalConfirm: "확인",
+      swalCancel: "취소",
+      swalSuccess: "성공",
+      swalError: "오류"
     }
   };
 
@@ -137,6 +203,25 @@
   let allMachines = [];
   let allTickets = [];
 
+  // --- Client Info (Device & Public IP) ---
+  async function getClientInfo() {
+    let device = navigator.userAgent || "";
+    let ip = "Unknown";
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const resp = await fetch('https://api.ipify.org?format=json', { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data && data.ip) ip = data.ip;
+      }
+    } catch (e) {
+      // Ignore network failure / adblock
+    }
+    return { device: device, ip: ip };
+  }
+
   // --- Utility: Show/Hide Loading ---
   function showLoading() {
     document.getElementById('loadingOverlay').classList.remove('d-none');
@@ -162,7 +247,7 @@
       });
     });
 
-    // Session check (dummy)
+    // Session check
     let savedUser = sessionStorage.getItem('mms_user');
     if (savedUser) {
       currentUser = JSON.parse(savedUser);
@@ -171,22 +256,32 @@
   });
 
   // --- Login Form Submit ---
-  document.getElementById('loginForm').addEventListener('submit', (e) => {
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     let u = document.getElementById('username').value;
     let p = document.getElementById('password').value;
     
     showLoading();
-    google.script.run.withSuccessHandler((res) => {
-      hideLoading();
-      if (res.success) {
-        currentUser = res;
-        sessionStorage.setItem('mms_user', JSON.stringify(res));
-        showMainApp();
-      } else {
-        Swal.fire({ icon: 'error', title: 'Error', text: res.message });
-      }
-    }).login(u, p);
+    const clientInfo = await getClientInfo();
+    
+    google.script.run
+      .withSuccessHandler((res) => {
+        hideLoading();
+        if (res.success) {
+          currentUser = res;
+          sessionStorage.setItem('mms_user', JSON.stringify(res));
+          showMainApp();
+        } else {
+          const lang = localStorage.getItem('mms_lang') || 'th';
+          const dict = i18n[lang] || i18n.th;
+          Swal.fire({ icon: 'error', title: dict.swalError || 'Error', text: res.message });
+        }
+      })
+      .withFailureHandler((err) => {
+        hideLoading();
+        Swal.fire({ icon: 'error', title: 'System Error', text: err.toString() });
+      })
+      .loginUser(u, p, clientInfo);
   });
 
   // --- Toggle Login/Register Forms ---
@@ -227,22 +322,46 @@
     }
     
     showLoading();
-    google.script.run.withSuccessHandler((res) => {
-      hideLoading();
-      if (res.success) {
-        Swal.fire({ icon: 'success', title: 'สำเร็จ', text: res.message });
-        document.getElementById('registerForm').reset();
-        document.getElementById('toggleLoginBtn').click(); // switch back to login
-      } else {
-        Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: res.message });
-      }
-    }).registerUser(u, p);
+    google.script.run
+      .withSuccessHandler((res) => {
+        hideLoading();
+        const lang = localStorage.getItem('mms_lang') || 'th';
+        const dict = i18n[lang] || i18n.th;
+        if (res.success) {
+          Swal.fire({ icon: 'success', title: dict.swalSuccess || 'สำเร็จ', text: res.message });
+          document.getElementById('registerForm').reset();
+          document.getElementById('toggleLoginBtn').click();
+        } else {
+          Swal.fire({ icon: 'error', title: dict.swalError || 'ผิดพลาด', text: res.message });
+        }
+      })
+      .withFailureHandler((err) => {
+        hideLoading();
+        Swal.fire({ icon: 'error', title: 'System Error', text: err.toString() });
+      })
+      .registerUser(u, p);
   });
 
   function showMainApp() {
     document.getElementById('loginPage').classList.add('d-none');
     document.getElementById('mainApp').classList.remove('d-none');
-    document.getElementById('displayUserName').innerText = currentUser.name;
+    document.getElementById('displayUserName').innerText = currentUser.name || currentUser.username;
+    
+    // Admin Only: Show User Management Nav Item
+    const role = (currentUser.role || '').toLowerCase();
+    const navUserMgmt = document.getElementById('navItemUserManagement');
+    if (navUserMgmt) {
+      if (role === 'admin') {
+        navUserMgmt.classList.remove('d-none');
+      } else {
+        navUserMgmt.classList.add('d-none');
+      }
+    }
+    
+    // Language Sync from Login to Main App
+    const currentLang = localStorage.getItem('mms_lang') || 'th';
+    document.querySelectorAll('.langSelect').forEach(s => s.value = currentLang);
+    changeLanguage(currentLang);
     
     // Load initial data
     loadMachines();
@@ -266,13 +385,11 @@
       e.preventDefault();
       let target = e.currentTarget.getAttribute('data-page');
       
-      // Update active class
       navLinks.forEach(l => l.classList.remove('active'));
       e.currentTarget.classList.add('active');
       
       switchPage(target);
       
-      // On mobile, close sidebar after clicking
       if (window.innerWidth <= 768) {
         document.getElementById('sidebar').classList.remove('mobile-show');
       }
@@ -281,12 +398,194 @@
 
   function switchPage(pageId) {
     document.querySelectorAll('.page-section').forEach(p => p.classList.add('d-none'));
-    document.getElementById('page-' + pageId).classList.remove('d-none');
+    const targetPage = document.getElementById('page-' + pageId);
+    if (targetPage) targetPage.classList.remove('d-none');
     
     // Refresh data based on page
     if (pageId === 'dashboard' || pageId === 'createTicket') loadMachines();
     if (pageId === 'updateTicket') loadTickets();
+    if (pageId === 'userManagement') loadUsersList();
   }
+
+  // --- Admin User Management ---
+  function loadUsersList() {
+    if (!currentUser || (currentUser.role || '').toLowerCase() !== 'admin') return;
+    showLoading();
+    google.script.run
+      .withSuccessHandler((res) => {
+        hideLoading();
+        if (res.success) {
+          renderUserTable(res.users);
+        } else {
+          Swal.fire({ icon: 'error', title: 'Error', text: res.message });
+        }
+      })
+      .withFailureHandler((err) => {
+        hideLoading();
+        Swal.fire({ icon: 'error', title: 'Error', text: err.toString() });
+      })
+      .getUsersList(currentUser.username);
+  }
+
+  function renderUserTable(users) {
+    const tbody = document.getElementById('userTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    const lang = localStorage.getItem('mms_lang') || 'th';
+    const dict = i18n[lang] || i18n.th;
+    
+    if (!users || users.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">ไม่พบข้อมูลผู้ใช้งาน</td></tr>`;
+      return;
+    }
+    
+    users.forEach(u => {
+      const isSelf = (currentUser && currentUser.username.toLowerCase() === u.username.toLowerCase());
+      const statusBadge = (u.status === 'Active') 
+        ? `<span class="badge bg-success">${dict.statusActive || 'Active'}</span>` 
+        : `<span class="badge bg-secondary">${dict.statusInactive || 'Inactive'}</span>`;
+      const roleBadge = (u.role === 'Admin') 
+        ? `<span class="badge bg-primary">${dict.roleAdmin || 'Admin'}</span>` 
+        : `<span class="badge bg-info text-dark">${dict.roleUser || 'User'}</span>`;
+      
+      const toggleStatusBtnText = (u.status === 'Active') ? (dict.btnSuspend || 'ระงับ') : (dict.btnActivate || 'เปิดใช้งาน');
+      const toggleStatusBtnClass = (u.status === 'Active') ? 'btn-outline-warning' : 'btn-outline-success';
+      
+      tbody.innerHTML += `
+        <tr>
+          <td class="ps-4 fw-bold">
+            <i class="fas fa-user-circle text-secondary me-2"></i>${u.username}
+            ${isSelf ? '<small class="text-primary ms-1">(คุณ)</small>' : ''}
+          </td>
+          <td>${roleBadge}</td>
+          <td>${statusBadge}</td>
+          <td class="small text-muted">${u.createdAt}</td>
+          <td class="text-end pe-4">
+            <button class="btn btn-sm btn-outline-secondary rounded-pill me-1" onclick="handleResetPassword('${u.username}')" title="${dict.btnResetPwd || 'รีเซ็ตรหัสผ่าน'}">
+              <i class="fas fa-key"></i> <span class="d-none d-lg-inline">${dict.btnResetPwd || 'รีเซ็ต'}</span>
+            </button>
+            <button class="btn btn-sm ${toggleStatusBtnClass} rounded-pill me-1" onclick="handleToggleStatus('${u.username}', '${u.status}')" ${isSelf ? 'disabled' : ''} title="${toggleStatusBtnText}">
+              <i class="fas ${u.status === 'Active' ? 'fa-ban' : 'fa-check'}"></i> <span class="d-none d-lg-inline">${toggleStatusBtnText}</span>
+            </button>
+            <button class="btn btn-sm btn-outline-info rounded-pill" onclick="handleUpdateRole('${u.username}', '${u.role}')" ${isSelf ? 'disabled' : ''} title="${dict.btnChangeRole || 'เปลี่ยนสิทธิ์'}">
+              <i class="fas fa-user-shield"></i> <span class="d-none d-lg-inline">${dict.btnChangeRole || 'เปลี่ยนสิทธิ์'}</span>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  document.getElementById('btnRefreshUsers')?.addEventListener('click', () => {
+    loadUsersList();
+  });
+
+  window.handleResetPassword = function(targetUser) {
+    const lang = localStorage.getItem('mms_lang') || 'th';
+    const dict = i18n[lang] || i18n.th;
+    
+    Swal.fire({
+      title: dict.swalResetPwdTitle || 'รีเซ็ตรหัสผ่านใหม่',
+      text: (dict.swalResetPwdText || 'กรุณาระบุรหัสผ่านใหม่สำหรับ: ') + targetUser,
+      input: 'password',
+      inputPlaceholder: 'New Password...',
+      showCancelButton: true,
+      confirmButtonText: dict.swalConfirm || 'ยืนยัน',
+      cancelButtonText: dict.swalCancel || 'ยกเลิก',
+      inputValidator: (value) => {
+        if (!value || value.trim().length < 4) {
+          return 'รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร';
+        }
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        showLoading();
+        google.script.run
+          .withSuccessHandler((res) => {
+            hideLoading();
+            if (res.success) {
+              Swal.fire({ icon: 'success', title: dict.swalSuccess || 'สำเร็จ', text: res.message });
+            } else {
+              Swal.fire({ icon: 'error', title: dict.swalError || 'ผิดพลาด', text: res.message });
+            }
+          })
+          .withFailureHandler((err) => {
+            hideLoading();
+            Swal.fire({ icon: 'error', title: dict.swalError || 'ผิดพลาด', text: err.toString() });
+          })
+          .adminResetPassword(currentUser.username, targetUser, result.value);
+      }
+    });
+  };
+
+  window.handleToggleStatus = function(targetUser, currentStatus) {
+    const newStatus = (currentStatus === 'Active') ? 'Inactive' : 'Active';
+    const lang = localStorage.getItem('mms_lang') || 'th';
+    const dict = i18n[lang] || i18n.th;
+    
+    Swal.fire({
+      title: dict.swalConfirm || 'ยืนยันการทำรายการ',
+      text: `ต้องการเปลี่ยนสถานะของ ${targetUser} เป็น "${newStatus}" หรือไม่?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: dict.swalConfirm || 'ยืนยัน',
+      cancelButtonText: dict.swalCancel || 'ยกเลิก'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        showLoading();
+        google.script.run
+          .withSuccessHandler((res) => {
+            hideLoading();
+            if (res.success) {
+              Swal.fire({ icon: 'success', title: dict.swalSuccess || 'สำเร็จ', text: res.message });
+              loadUsersList();
+            } else {
+              Swal.fire({ icon: 'error', title: dict.swalError || 'ผิดพลาด', text: res.message });
+            }
+          })
+          .withFailureHandler((err) => {
+            hideLoading();
+            Swal.fire({ icon: 'error', title: dict.swalError || 'ผิดพลาด', text: err.toString() });
+          })
+          .adminToggleStatus(currentUser.username, targetUser, newStatus);
+      }
+    });
+  };
+
+  window.handleUpdateRole = function(targetUser, currentRole) {
+    const newRole = (currentRole === 'Admin') ? 'User' : 'Admin';
+    const lang = localStorage.getItem('mms_lang') || 'th';
+    const dict = i18n[lang] || i18n.th;
+    
+    Swal.fire({
+      title: dict.swalConfirm || 'ยืนยันการเปลี่ยนสิทธิ์',
+      text: `ต้องการเปลี่ยนสิทธิ์ของ ${targetUser} จาก "${currentRole}" เป็น "${newRole}" หรือไม่?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: dict.swalConfirm || 'ยืนยัน',
+      cancelButtonText: dict.swalCancel || 'ยกเลิก'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        showLoading();
+        google.script.run
+          .withSuccessHandler((res) => {
+            hideLoading();
+            if (res.success) {
+              Swal.fire({ icon: 'success', title: dict.swalSuccess || 'สำเร็จ', text: res.message });
+              loadUsersList();
+            } else {
+              Swal.fire({ icon: 'error', title: dict.swalError || 'ผิดพลาด', text: res.message });
+            }
+          })
+          .withFailureHandler((err) => {
+            hideLoading();
+            Swal.fire({ icon: 'error', title: dict.swalError || 'ผิดพลาด', text: err.toString() });
+          })
+          .adminUpdateRole(currentUser.username, targetUser, newRole);
+      }
+    });
+  };
 
   // --- Sidebar Toggle ---
   document.getElementById('sidebarCollapse')?.addEventListener('click', () => {

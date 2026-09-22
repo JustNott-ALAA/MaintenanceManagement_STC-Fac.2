@@ -25,7 +25,8 @@ function include(filename) {
 function setupDatabase() {
   var ss = getDB();
   var sheets = [
-    { name: "Users", headers: ["username", "password", "role", "redirect"] },
+    { name: "Users", headers: ["username", "password_hash", "role", "status", "created_at"] },
+    { name: "UsersLogBook", headers: ["Log_ID", "Timestamp", "Username", "Role", "Action", "Remarks", "Device_Browser", "IP_Address"] },
     { name: "Equipments", headers: ["Serial Number", "TYPE", "Controller", "Fac", "Line", "MODEL", "Vendor", "QR Code코드", "QR Image코드이미지", "FAC2", "Remark"] },
     { name: "Repair History", headers: ["Date", "Serial Number", "Ticket_ID", "TYPE", "FAC2", "LINE", "Task Classification", "Before Symptoms", "Before Problem", "After Repair Completed", "PART", "Repair Started", "Repair Ended", "Total Time (Minutes)", "Worker작업자", "Before1", "Before2", "Before3", "After1", "After2", "After3", "Before1 Preview", "Before2 Preview", "Before3 Preview", "After1 Preview", "After2 Preview", "After3 Preview"] },
     { name: "Machines", headers: ["Machine_ID", "Machine_Name", "PM_Type", "Last_PM_Date", "Next_PM_Date", "Location", "QR_Link", "History_Link"] },
@@ -44,7 +45,6 @@ function setupDatabase() {
     
     // Copy "Machine List" from template if it doesn't exist
     var machineListSheet = ss.getSheetByName("Machine List");
-    // ถ้ามีชีทอยู่แล้วแต่มีแค่บรรทัดเดียว (แค่หัวข้อ) ให้ลบทิ้งเพื่อดึงข้อมูลใหม่
     if (machineListSheet && machineListSheet.getLastRow() <= 1) {
       ss.deleteSheet(machineListSheet);
       machineListSheet = null;
@@ -62,41 +62,276 @@ function setupDatabase() {
     
     // Add default user if not exists
     if (s.name === "Users" && sheet.getLastRow() === 1) {
-      sheet.appendRow(["admin", "1234", "admin", ""]);
+      sheet.appendRow(["admin", hashPassword("1234"), "Admin", "Active", new Date()]);
     }
     // Add dummy machine if not exists
     if (s.name === "Machines" && sheet.getLastRow() === 1) {
       sheet.appendRow(["M001", "CNC Machine 1", 30, new Date(), new Date(new Date().setDate(new Date().getDate() + 30)), "Zone A", "", ""]);
     }
   });
+
+  setupAuthDatabase();
   return "Database Setup Complete!";
 }
 
+function setupAuthDatabase() {
+  var ss = getDB();
+  
+  // 1. Users sheet
+  var userHeaders = ["username", "password_hash", "role", "status", "created_at"];
+  var userSheet = ss.getSheetByName("Users");
+  if (!userSheet) {
+    userSheet = ss.insertSheet("Users");
+    userSheet.getRange(1, 1, 1, userHeaders.length).setValues([userHeaders]).setFontWeight("bold");
+    userSheet.appendRow(["admin", hashPassword("1234"), "Admin", "Active", new Date()]);
+  } else {
+    var curHeaders = userSheet.getRange(1, 1, 1, Math.max(userSheet.getLastColumn(), 1)).getValues()[0];
+    if (curHeaders.indexOf("password_hash") === -1) {
+      var lastRow = userSheet.getLastRow();
+      if (lastRow > 1) {
+        var usersData = userSheet.getRange(2, 1, lastRow - 1, curHeaders.length).getValues();
+        userSheet.clear();
+        userSheet.getRange(1, 1, 1, userHeaders.length).setValues([userHeaders]).setFontWeight("bold");
+        usersData.forEach(function(row) {
+          var u = row[0];
+          var rawPwd = row[1];
+          var role = (row[2] && row[2].toString().toLowerCase() === 'admin') ? 'Admin' : 'User';
+          var hashed = rawPwd ? hashPassword(rawPwd.toString()) : hashPassword("1234");
+          userSheet.appendRow([u, hashed, role, "Active", new Date()]);
+        });
+      } else {
+        userSheet.clear();
+        userSheet.getRange(1, 1, 1, userHeaders.length).setValues([userHeaders]).setFontWeight("bold");
+        userSheet.appendRow(["admin", hashPassword("1234"), "Admin", "Active", new Date()]);
+      }
+    }
+  }
+
+  // 2. UsersLogBook sheet
+  var logHeaders = ["Log_ID", "Timestamp", "Username", "Role", "Action", "Remarks", "Device_Browser", "IP_Address"];
+  var logSheet = ss.getSheetByName("UsersLogBook");
+  if (!logSheet) {
+    logSheet = ss.insertSheet("UsersLogBook");
+    logSheet.getRange(1, 1, 1, logHeaders.length).setValues([logHeaders]).setFontWeight("bold");
+  }
+
+  return "Auth Database Setup Complete!";
+}
+
 // ------------------------------------------------------------------
-// 2. Authentication
+// 2. Authentication & User Management
 // ------------------------------------------------------------------
-function login(username, password) {
-  var sheet = getDB().getSheetByName("Users");
+function hashPassword(password) {
+  if (!password) return "";
+  var rawHash = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, password.toString(), Utilities.Charset.UTF_8);
+  var hash = "";
+  for (var i = 0; i < rawHash.length; i++) {
+    var byteVal = rawHash[i] < 0 ? rawHash[i] + 256 : rawHash[i];
+    var byteStr = byteVal.toString(16);
+    hash += (byteStr.length === 1 ? "0" : "") + byteStr;
+  }
+  return hash;
+}
+
+function loginUser(username, password, clientInfo) {
+  var ss = getDB();
+  var sheet = ss.getSheetByName("Users");
+  if (!sheet) {
+    setupAuthDatabase();
+    sheet = ss.getSheetByName("Users");
+  }
+  
   var data = sheet.getDataRange().getValues();
+  var uClean = (username || "").toString().trim().toLowerCase();
+  var hashed = hashPassword((password || "").toString().trim());
+  
   for (var i = 1; i < data.length; i++) {
-    if (data[i][0] == username && data[i][1] == password) {
-      return { success: true, name: data[i][0], role: data[i][2], redirect: data[i][3], username: data[i][0] };
+    var rowUser = (data[i][0] || "").toString().trim().toLowerCase();
+    var rowHash = (data[i][1] || "").toString().trim();
+    var rowRole = data[i][2] || "User";
+    var rowStatus = data[i][3] || "Active";
+    
+    if (rowUser === uClean && rowHash === hashed) {
+      if (rowStatus === "Inactive") {
+        return { success: false, message: "บัญชีของคุณถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ" };
+      }
+      
+      // Log to UsersLogBook ONLY on Login Success
+      try {
+        var logSheet = ss.getSheetByName("UsersLogBook");
+        if (!logSheet) {
+          setupAuthDatabase();
+          logSheet = ss.getSheetByName("UsersLogBook");
+        }
+        var timestamp = new Date();
+        var logId = "LOG-" + Utilities.formatDate(timestamp, "Asia/Bangkok", "yyMMdd-HHmmss") + "-" + Math.floor(100 + Math.random() * 900);
+        var device = (clientInfo && clientInfo.device) ? clientInfo.device : "";
+        var ip = (clientInfo && clientInfo.ip) ? clientInfo.ip : "";
+        logSheet.appendRow([
+          logId,
+          timestamp,
+          data[i][0],
+          rowRole,
+          "LOGIN_SUCCESS",
+          "เข้าสู่ระบบสำเร็จ",
+          device,
+          ip
+        ]);
+      } catch (logErr) {
+        Logger.log("Error logging user login: " + logErr.toString());
+      }
+      
+      return {
+        success: true,
+        username: data[i][0],
+        name: data[i][0],
+        role: rowRole,
+        status: rowStatus
+      };
     }
   }
   return { success: false, message: "Username หรือ Password ไม่ถูกต้อง" };
 }
 
+function login(username, password, clientInfo) {
+  return loginUser(username, password, clientInfo);
+}
+
 function registerUser(username, password) {
-  var sheet = getDB().getSheetByName("Users");
+  var ss = getDB();
+  var sheet = ss.getSheetByName("Users");
+  if (!sheet) {
+    setupAuthDatabase();
+    sheet = ss.getSheetByName("Users");
+  }
+  
+  var uClean = (username || "").toString().trim().toLowerCase();
+  var uOrig = (username || "").toString().trim();
+  
+  if (!/^[A-Za-z0-9_]+$/.test(uOrig)) {
+    return { success: false, message: "กรุณาตั้งชื่อผู้ใช้เป็นภาษาอังกฤษและตัวเลขเท่านั้น" };
+  }
+  
   var data = sheet.getDataRange().getValues();
   for (var i = 1; i < data.length; i++) {
-    if (data[i][0] == username) {
-      return { success: false, message: "มีผู้ใช้งานชื่อนี้แล้ว" };
+    var existingUser = (data[i][0] || "").toString().trim().toLowerCase();
+    if (existingUser === uClean) {
+      return { success: false, message: "มีผู้ใช้งานชื่อนี้แล้ว กรุณาใช้ชื่ออื่น" };
     }
   }
-  const redirectUrl = 'https://sites.google.com/view/pavaritport/homepage';
-  sheet.appendRow([username, password, "member", redirectUrl]);
-  return { success: true, message: "สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ" };
+  
+  var hashed = hashPassword((password || "").toString().trim());
+  var role = (uClean === "admin") ? "Admin" : "User";
+  sheet.appendRow([uOrig, hashed, role, "Active", new Date()]);
+  return { success: true, message: "ลงทะเบียนสำเร็จ กรุณาเข้าสู่ระบบ" };
+}
+
+function getUsersList(adminUsername) {
+  var ss = getDB();
+  var sheet = ss.getSheetByName("Users");
+  if (!sheet) return { success: false, message: "Users sheet not found" };
+  
+  var data = sheet.getDataRange().getValues();
+  var isAdmin = false;
+  var checkUser = (adminUsername || "").toString().trim().toLowerCase();
+  for (var i = 1; i < data.length; i++) {
+    if ((data[i][0] || "").toString().trim().toLowerCase() === checkUser) {
+      if ((data[i][2] || "").toString().toLowerCase() === "admin") {
+        isAdmin = true;
+      }
+      break;
+    }
+  }
+  if (!isAdmin) {
+    return { success: false, message: "Permission Denied: เฉพาะผู้ดูแลระบบ (Admin) เท่านั้น" };
+  }
+  
+  var list = [];
+  for (var j = 1; j < data.length; j++) {
+    list.push({
+      username: data[j][0],
+      role: data[j][2] || "User",
+      status: data[j][3] || "Active",
+      createdAt: data[j][4] ? Utilities.formatDate(new Date(data[j][4]), "Asia/Bangkok", "yyyy-MM-dd HH:mm") : "-"
+    });
+  }
+  return { success: true, users: list };
+}
+
+function adminResetPassword(adminUsername, targetUsername, newPassword) {
+  var ss = getDB();
+  var sheet = ss.getSheetByName("Users");
+  var data = sheet.getDataRange().getValues();
+  
+  var isAdmin = false;
+  var checkUser = (adminUsername || "").toString().trim().toLowerCase();
+  for (var i = 1; i < data.length; i++) {
+    if ((data[i][0] || "").toString().trim().toLowerCase() === checkUser && (data[i][2] || "").toString().toLowerCase() === "admin") {
+      isAdmin = true;
+      break;
+    }
+  }
+  if (!isAdmin) return { success: false, message: "Permission Denied" };
+  
+  var target = (targetUsername || "").toString().trim().toLowerCase();
+  var newHashed = hashPassword((newPassword || "").toString().trim());
+  for (var j = 1; j < data.length; j++) {
+    if ((data[j][0] || "").toString().trim().toLowerCase() === target) {
+      sheet.getRange(j + 1, 2).setValue(newHashed);
+      return { success: true, message: "รีเซ็ตรหัสผ่านของผู้ใช้ " + targetUsername + " เรียบร้อยแล้ว" };
+    }
+  }
+  return { success: false, message: "ไม่พบผู้ใช้นี้ในระบบ" };
+}
+
+function adminToggleStatus(adminUsername, targetUsername, newStatus) {
+  var ss = getDB();
+  var sheet = ss.getSheetByName("Users");
+  var data = sheet.getDataRange().getValues();
+  
+  var isAdmin = false;
+  var checkUser = (adminUsername || "").toString().trim().toLowerCase();
+  for (var i = 1; i < data.length; i++) {
+    if ((data[i][0] || "").toString().trim().toLowerCase() === checkUser && (data[i][2] || "").toString().toLowerCase() === "admin") {
+      isAdmin = true;
+      break;
+    }
+  }
+  if (!isAdmin) return { success: false, message: "Permission Denied" };
+  
+  var target = (targetUsername || "").toString().trim().toLowerCase();
+  for (var j = 1; j < data.length; j++) {
+    if ((data[j][0] || "").toString().trim().toLowerCase() === target) {
+      sheet.getRange(j + 1, 4).setValue(newStatus);
+      return { success: true, message: "เปลี่ยนสถานะผู้ใช้เป็น " + newStatus + " เรียบร้อยแล้ว" };
+    }
+  }
+  return { success: false, message: "ไม่พบผู้ใช้นี้ในระบบ" };
+}
+
+function adminUpdateRole(adminUsername, targetUsername, newRole) {
+  var ss = getDB();
+  var sheet = ss.getSheetByName("Users");
+  var data = sheet.getDataRange().getValues();
+  
+  var isAdmin = false;
+  var checkUser = (adminUsername || "").toString().trim().toLowerCase();
+  for (var i = 1; i < data.length; i++) {
+    if ((data[i][0] || "").toString().trim().toLowerCase() === checkUser && (data[i][2] || "").toString().toLowerCase() === "admin") {
+      isAdmin = true;
+      break;
+    }
+  }
+  if (!isAdmin) return { success: false, message: "Permission Denied" };
+  
+  var target = (targetUsername || "").toString().trim().toLowerCase();
+  for (var j = 1; j < data.length; j++) {
+    if ((data[j][0] || "").toString().trim().toLowerCase() === target) {
+      sheet.getRange(j + 1, 3).setValue(newRole);
+      return { success: true, message: "เปลี่ยนสิทธิ์ผู้ใช้เป็น " + newRole + " เรียบร้อยแล้ว" };
+    }
+  }
+  return { success: false, message: "ไม่พบผู้ใช้นี้ในระบบ" };
 }
 
 // ------------------------------------------------------------------
