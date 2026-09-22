@@ -761,6 +761,18 @@
     
     let originalText = document.getElementById('transInput').value.trim();
     let engText = document.getElementById('issueDesc').value.trim();
+    let selMachine = document.getElementById('selMachine').value;
+    let urgency = document.getElementById('urgency').value;
+    
+    // Explicit Validation for required fields
+    if (!selMachine || !engText || !urgency) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'ข้อมูลไม่ครบถ้วน / Missing Data',
+        text: 'กรุณาเลือกเครื่องจักร, ระบุอาการเสีย และความเร่งด่วน / Please select Machine, Issue, and Urgency.'
+      });
+      return;
+    }
     
     // Validation: English only for issue description
     if (!isEnglishOnly(engText)) {
