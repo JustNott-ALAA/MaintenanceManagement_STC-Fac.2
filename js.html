@@ -759,18 +759,25 @@
   document.getElementById('createTicketForm').addEventListener('submit', (e) => {
     e.preventDefault();
     
-    let issueText = document.getElementById('issueDesc').value;
+    let originalText = document.getElementById('transInput').value.trim();
+    let engText = document.getElementById('issueDesc').value.trim();
+    
     // Validation: English only for issue description
-    if (!isEnglishOnly(issueText)) {
+    if (!isEnglishOnly(engText)) {
       document.getElementById('issueError').classList.remove('d-none');
       return;
     } else {
       document.getElementById('issueError').classList.add('d-none');
     }
 
+    let combinedIssue = engText;
+    if (originalText) {
+      combinedIssue = originalText + "_" + engText;
+    }
+
     let data = {
       machineId: document.getElementById('selMachine').value,
-      issue: issueText,
+      issue: combinedIssue,
       urgency: document.getElementById('urgency').value,
       reporter: currentUser.name
     };
