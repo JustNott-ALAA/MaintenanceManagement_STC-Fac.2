@@ -599,84 +599,113 @@
   // --- Load Data: Machines ---
   function loadMachines() {
     showLoading();
-    google.script.run.withSuccessHandler((machines) => {
-      allMachines = machines;
-      hideLoading();
-      
-      // Render Dashboard
-      const mList = document.getElementById('machineList');
-      mList.innerHTML = '';
-      
-      // Render Dropdown
-      const mSelect = document.getElementById('selMachine');
-      mSelect.innerHTML = '<option value="">-- กรุณาเลือก --</option>';
-
-      machines.forEach(m => {
-        // Dropdown
-        mSelect.innerHTML += `<option value="${m.id}">${m.name}</option>`;
+    google.script.run
+      .withSuccessHandler((machines) => {
+        allMachines = machines || [];
+        hideLoading();
         
-        // Card (Simplified since we only have Line from Machine List)
-        mList.innerHTML += `
-          <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card shadow-sm border-0 rounded-4 h-100">
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                  <div>
-                    <h5 class="fw-bold mb-1"><i class="fas fa-industry me-2 text-primary"></i> ${m.name}</h5>
+        // Render Dashboard
+        const mList = document.getElementById('machineList');
+        if (mList) {
+          mList.innerHTML = '';
+          if (!machines || machines.length === 0) {
+            mList.innerHTML = '<div class="col-12 text-center text-muted py-5">ไม่มีข้อมูลเครื่องจักร</div>';
+          } else {
+            machines.forEach(m => {
+              mList.innerHTML += `
+                <div class="col-md-6 col-lg-4 mb-4">
+                  <div class="card shadow-sm border-0 rounded-4 h-100">
+                    <div class="card-body">
+                      <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                          <h5 class="fw-bold mb-1"><i class="fas fa-industry me-2 text-primary"></i> ${m.name}</h5>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        `;
-      });
-    }).getMachines();
+              `;
+            });
+          }
+        }
+        
+        // Render Dropdown
+        const mSelect = document.getElementById('selMachine');
+        if (mSelect) {
+          mSelect.innerHTML = '<option value="">-- กรุณาเลือก --</option>';
+          if (machines) {
+            machines.forEach(m => {
+              mSelect.innerHTML += `<option value="${m.id}">${m.name}</option>`;
+            });
+          }
+        }
+      })
+      .withFailureHandler((err) => {
+        hideLoading();
+        console.error("loadMachines error:", err);
+      })
+      .getMachines();
   }
 
   // --- Load Data: Tickets ---
   function loadTickets() {
     showLoading();
-    google.script.run.withSuccessHandler((tickets) => {
-      allTickets = tickets;
-      hideLoading();
-      
-      const tList = document.getElementById('ticketList');
-      tList.innerHTML = '';
-      
-      if(tickets.length === 0) {
-        tList.innerHTML = `<div class="col-12 text-center text-muted py-5">ไม่มีข้อมูลใบแจ้งซ่อม</div>`;
-        return;
-      }
+    google.script.run
+      .withSuccessHandler((tickets) => {
+        allTickets = tickets || [];
+        hideLoading();
+        
+        const tList = document.getElementById('ticketList');
+        if (!tList) return;
+        tList.innerHTML = '';
+        
+        if (!tickets || tickets.length === 0) {
+          tList.innerHTML = `<div class="col-12 text-center text-muted py-5">ไม่มีข้อมูลใบแจ้งซ่อม</div>`;
+          return;
+        }
 
-      tickets.forEach(t => {
-        let badgeClass = 'bg-secondary';
-        if (t.Status && t.Status.includes('รอดำเนินการ')) badgeClass = 'bg-danger';
-        else if (t.Status && t.Status.includes('กำลังซ่อม')) badgeClass = 'bg-primary';
-        else if (t.Status && t.Status.includes('รออะไหล่')) badgeClass = 'bg-warning text-dark';
-        else if (t.Status && t.Status.includes('เสร็จสิ้น')) badgeClass = 'bg-success';
+        tickets.forEach(t => {
+          let badgeClass = 'bg-secondary';
+          if (t.Status && t.Status.includes('รอดำเนินการ')) badgeClass = 'bg-danger';
+          else if (t.Status && t.Status.includes('กำลังซ่อม')) badgeClass = 'bg-primary';
+          else if (t.Status && t.Status.includes('รออะไหล่')) badgeClass = 'bg-warning text-dark';
+          else if (t.Status && t.Status.includes('เสร็จสิ้น')) badgeClass = 'bg-success';
 
-        let dateStr = new Date(t.Timestamp).toLocaleString('th-TH');
+          let dateStr = '-';
+          if (t.Timestamp) {
+            let parsedDate = new Date(t.Timestamp);
+            dateStr = isNaN(parsedDate.getTime()) ? t.Timestamp : parsedDate.toLocaleString('th-TH');
+          }
 
-        tList.innerHTML += `
-          <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card shadow-sm border-0 rounded-4 h-100 cursor-pointer" onclick="viewTicketDetail('${t.Ticket_ID}')" style="cursor: pointer;">
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                  <span class="fw-bold text-primary">${t.Ticket_ID}</span>
-                  <span class="badge ${badgeClass} status-badge">${t.Status}</span>
-                </div>
-                <h6 class="fw-bold text-truncate">${t.Machine_ID}</h6>
-                <p class="small text-muted mb-3 text-truncate">${t.Issue}</p>
-                <div class="d-flex justify-content-between align-items-center mt-auto">
-                  <small class="text-muted"><i class="fas fa-clock me-1"></i> ${dateStr}</small>
-                  <small class="fw-bold"><i class="fas fa-user me-1"></i> ${t.Reporter}</small>
+          tList.innerHTML += `
+            <div class="col-md-6 col-lg-4 mb-4">
+              <div class="card shadow-sm border-0 rounded-4 h-100 cursor-pointer" onclick="viewTicketDetail('${t.Ticket_ID}')" style="cursor: pointer;">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="fw-bold text-primary">${t.Ticket_ID}</span>
+                    <span class="badge ${badgeClass} status-badge">${t.Status || ''}</span>
+                  </div>
+                  <h6 class="fw-bold text-truncate">${t.Machine_ID || '-'}</h6>
+                  <p class="small text-muted mb-3 text-truncate">${t.Issue || '-'}</p>
+                  <div class="d-flex justify-content-between align-items-center mt-auto">
+                    <small class="text-muted"><i class="fas fa-clock me-1"></i> ${dateStr}</small>
+                    <small class="fw-bold"><i class="fas fa-user me-1"></i> ${t.Reporter || '-'}</small>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        `;
-      });
-    }).getTickets();
+          `;
+        });
+      })
+      .withFailureHandler((err) => {
+        hideLoading();
+        console.error("loadTickets error:", err);
+        const tList = document.getElementById('ticketList');
+        if (tList) {
+          tList.innerHTML = `<div class="col-12 text-center text-danger py-5">เกิดข้อผิดพลาดในการโหลดข้อมูล: ${err.toString()}</div>`;
+        }
+      })
+      .getTickets();
   }
 
   // --- Translate Tool ---
@@ -744,78 +773,99 @@
   // --- View Ticket Detail ---
   function viewTicketDetail(ticketId) {
     showLoading();
-    google.script.run.withSuccessHandler((data) => {
-      hideLoading();
-      
-      // Switch Page manually
-      document.querySelectorAll('.page-section').forEach(p => p.classList.add('d-none'));
-      document.getElementById('page-ticketDetail').classList.remove('d-none');
-      
-      // Fill Info
-      const t = data.ticket;
-      document.getElementById('detailTicketId').innerText = t.Ticket_ID;
-      document.getElementById('detailMachine').innerText = t.Machine_ID;
-      document.getElementById('detailIssue').innerText = t.Issue;
-      document.getElementById('detailReporter').innerText = t.Reporter;
-      
-      let bClass = (t.Status && t.Status.includes('เสร็จสิ้น')) ? 'bg-success' : 'bg-warning';
-      document.getElementById('detailStatus').innerText = t.Status;
-      document.getElementById('detailStatus').className = `badge ${bClass} text-dark`;
-      
-      // Update form init
-      document.getElementById('updTicketId').value = t.Ticket_ID;
-      document.getElementById('updStatus').value = t.Status;
-      document.getElementById('updDetails').value = '';
-      document.getElementById('updBeforeImage').value = '';
-      document.getElementById('updAfterImage').value = '';
-
-      // Build Timeline
-      const tlContainer = document.getElementById('timelineContainer');
-      tlContainer.innerHTML = '';
-      
-      let allEvents = [];
-      data.history.forEach(h => allEvents.push({ type: 'status', time: new Date(h.Timestamp), data: h }));
-      data.repairs.forEach(r => allEvents.push({ type: 'repair', time: new Date(r.Timestamp), data: r }));
-      
-      // Sort desc
-      allEvents.sort((a,b) => b.time - a.time);
-
-      if(allEvents.length === 0) tlContainer.innerHTML = '<p class="text-muted">ยังไม่มีประวัติการดำเนินการ</p>';
-
-      allEvents.forEach(ev => {
-        let dateStr = ev.time.toLocaleString('th-TH');
-        if(ev.type === 'status') {
-          let h = ev.data;
-          tlContainer.innerHTML += `
-            <div class="timeline-item">
-              <div class="timeline-marker bg-secondary"></div>
-              <div class="timeline-content">
-                <span class="timeline-date">${dateStr} - ${h.Update_By}</span>
-                <p class="mb-0 fw-bold">เปลี่ยนสถานะ: <span class="text-muted">${h.Old_Status}</span> <i class="fas fa-arrow-right mx-1"></i> <span class="text-primary">${h.New_Status}</span></p>
-              </div>
-            </div>
-          `;
-        } else {
-          let r = ev.data;
-          let imgHtml = '';
-          if(r.Before_Image) imgHtml += `<a href="${r.Before_Image}" target="_blank"><img src="${r.Before_Image}" class="img-thumbnail me-2 mt-2" style="height:60px"></a>`;
-          if(r.After_Image) imgHtml += `<a href="${r.After_Image}" target="_blank"><img src="${r.After_Image}" class="img-thumbnail mt-2" style="height:60px"></a>`;
-          
-          tlContainer.innerHTML += `
-            <div class="timeline-item">
-              <div class="timeline-marker bg-primary"></div>
-              <div class="timeline-content">
-                <span class="timeline-date">${dateStr} - ${r.Repairer}</span>
-                <p class="mb-1 text-primary fw-bold"><i class="fas fa-wrench me-1"></i> อัปเดตงานซ่อม</p>
-                ${r.Repair_Details ? `<p class="mb-0 small">${r.Repair_Details}</p>` : ''}
-                <div class="timeline-images">${imgHtml}</div>
-              </div>
-            </div>
-          `;
+    google.script.run
+      .withSuccessHandler((data) => {
+        hideLoading();
+        
+        if (!data || !data.ticket) {
+          Swal.fire({ icon: 'error', title: 'Error', text: 'ไม่พบข้อมูลใบงาน' });
+          return;
         }
-      });
-      
-    }).getTicketDetails(ticketId);
+
+        // Switch Page manually
+        document.querySelectorAll('.page-section').forEach(p => p.classList.add('d-none'));
+        document.getElementById('page-ticketDetail').classList.remove('d-none');
+        
+        // Fill Info
+        const t = data.ticket;
+        document.getElementById('detailTicketId').innerText = t.Ticket_ID || '';
+        document.getElementById('detailMachine').innerText = t.Machine_ID || '-';
+        document.getElementById('detailIssue').innerText = t.Issue || '-';
+        document.getElementById('detailReporter').innerText = t.Reporter || '-';
+        
+        let bClass = (t.Status && t.Status.includes('เสร็จสิ้น')) ? 'bg-success' : 'bg-warning';
+        document.getElementById('detailStatus').innerText = t.Status || '-';
+        document.getElementById('detailStatus').className = `badge ${bClass} text-dark`;
+        
+        // Update form init
+        document.getElementById('updTicketId').value = t.Ticket_ID || '';
+        document.getElementById('updStatus').value = t.Status || '';
+        document.getElementById('updDetails').value = '';
+        document.getElementById('updBeforeImage').value = '';
+        document.getElementById('updAfterImage').value = '';
+
+        // Build Timeline
+        const tlContainer = document.getElementById('timelineContainer');
+        tlContainer.innerHTML = '';
+        
+        let allEvents = [];
+        if (data.history && Array.isArray(data.history)) {
+          data.history.forEach(h => {
+            let tDate = h.Timestamp ? new Date(h.Timestamp) : new Date(0);
+            allEvents.push({ type: 'status', time: tDate, data: h });
+          });
+        }
+        if (data.repairs && Array.isArray(data.repairs)) {
+          data.repairs.forEach(r => {
+            let tDate = r.Timestamp ? new Date(r.Timestamp) : new Date(0);
+            allEvents.push({ type: 'repair', time: tDate, data: r });
+          });
+        }
+        
+        // Sort desc
+        allEvents.sort((a,b) => b.time - a.time);
+
+        if(allEvents.length === 0) tlContainer.innerHTML = '<p class="text-muted">ยังไม่มีประวัติการดำเนินการ</p>';
+
+        allEvents.forEach(ev => {
+          let dateStr = isNaN(ev.time.getTime()) ? '-' : ev.time.toLocaleString('th-TH');
+          if(ev.type === 'status') {
+            let h = ev.data;
+            tlContainer.innerHTML += `
+              <div class="timeline-item">
+                <div class="timeline-marker bg-secondary"></div>
+                <div class="timeline-content">
+                  <span class="timeline-date">${dateStr} - ${h.Update_By || '-'}</span>
+                  <p class="mb-0 fw-bold">เปลี่ยนสถานะ: <span class="text-muted">${h.Old_Status || '-'}</span> <i class="fas fa-arrow-right mx-1"></i> <span class="text-primary">${h.New_Status || '-'}</span></p>
+                </div>
+              </div>
+            `;
+          } else {
+            let r = ev.data;
+            let imgHtml = '';
+            if(r.Before_Image) imgHtml += `<a href="${r.Before_Image}" target="_blank"><img src="${r.Before_Image}" class="img-thumbnail me-2 mt-2" style="height:60px"></a>`;
+            if(r.After_Image) imgHtml += `<a href="${r.After_Image}" target="_blank"><img src="${r.After_Image}" class="img-thumbnail mt-2" style="height:60px"></a>`;
+            
+            tlContainer.innerHTML += `
+              <div class="timeline-item">
+                <div class="timeline-marker bg-primary"></div>
+                <div class="timeline-content">
+                  <span class="timeline-date">${dateStr} - ${r.Repairer || '-'}</span>
+                  <p class="mb-1 text-primary fw-bold"><i class="fas fa-wrench me-1"></i> อัปเดตงานซ่อม</p>
+                  ${r.Repair_Details ? `<p class="mb-0 small">${r.Repair_Details}</p>` : ''}
+                  <div class="timeline-images">${imgHtml}</div>
+                </div>
+              </div>
+            `;
+          }
+        });
+        
+      })
+      .withFailureHandler((err) => {
+        hideLoading();
+        Swal.fire({ icon: 'error', title: 'Error', text: err.toString() });
+      })
+      .getTicketDetails(ticketId);
   }
 
   // --- Back Button ---

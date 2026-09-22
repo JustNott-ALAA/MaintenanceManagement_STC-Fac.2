@@ -398,13 +398,20 @@ function getMachines() {
 
 function getTickets() {
   var sheet = getDB().getSheetByName("Tickets");
+  if (!sheet) return [];
   var data = sheet.getDataRange().getValues();
+  if (data.length < 2) return [];
+  
   var headers = data[0];
   var tickets = [];
   for (var i = 1; i < data.length; i++) {
     var obj = {};
     for (var j = 0; j < headers.length; j++) {
-      obj[headers[j]] = data[i][j];
+      var val = data[i][j];
+      if (val instanceof Date) {
+        val = Utilities.formatDate(val, "Asia/Bangkok", "yyyy-MM-dd'T'HH:mm:ss");
+      }
+      obj[headers[j]] = (val !== undefined && val !== null) ? val : "";
     }
     tickets.push(obj);
   }
@@ -416,63 +423,85 @@ function getTicketDetails(ticketId) {
   
   // Get Ticket Info
   var tSheet = db.getSheetByName("Tickets");
-  var tData = tSheet.getDataRange().getValues();
-  var tHeaders = tData[0];
   var ticketInfo = null;
-  for (var i = 1; i < tData.length; i++) {
-    if (tData[i][0] == ticketId) {
-      ticketInfo = {};
-      for (var j = 0; j < tHeaders.length; j++) {
-        ticketInfo[tHeaders[j]] = tData[i][j];
+  if (tSheet) {
+    var tData = tSheet.getDataRange().getValues();
+    if (tData.length > 1) {
+      var tHeaders = tData[0];
+      for (var i = 1; i < tData.length; i++) {
+        if (tData[i][0] == ticketId) {
+          ticketInfo = {};
+          for (var j = 0; j < tHeaders.length; j++) {
+            var val = tData[i][j];
+            if (val instanceof Date) {
+              val = Utilities.formatDate(val, "Asia/Bangkok", "yyyy-MM-dd'T'HH:mm:ss");
+            }
+            ticketInfo[tHeaders[j]] = (val !== undefined && val !== null) ? val : "";
+          }
+          break;
+        }
       }
-      break;
     }
   }
 
   // Get History
   var hSheet = db.getSheetByName("History");
-  var hData = hSheet.getDataRange().getValues();
   var history = [];
-  for (var i = 1; i < hData.length; i++) {
-    if (hData[i][0] == ticketId) {
-      history.push({
-        Timestamp: hData[i][1],
-        Old_Status: hData[i][2],
-        New_Status: hData[i][3],
-        Update_By: hData[i][4]
-      });
+  if (hSheet) {
+    var hData = hSheet.getDataRange().getValues();
+    for (var i = 1; i < hData.length; i++) {
+      if (hData[i][0] == ticketId) {
+        var hTime = hData[i][1];
+        if (hTime instanceof Date) {
+          hTime = Utilities.formatDate(hTime, "Asia/Bangkok", "yyyy-MM-dd'T'HH:mm:ss");
+        }
+        history.push({
+          Timestamp: (hTime !== undefined && hTime !== null) ? hTime : "",
+          Old_Status: hData[i][2] || "",
+          New_Status: hData[i][3] || "",
+          Update_By: hData[i][4] || ""
+        });
+      }
     }
   }
 
   // Get Repairs
   var rSheet = db.getSheetByName("Repairs");
-  var rData = rSheet.getDataRange().getValues();
   var repairs = [];
-  for (var i = 1; i < rData.length; i++) {
-    if (rData[i][0] == ticketId) {
-      repairs.push({
-        Timestamp: rData[i][1],
-        Repairer: rData[i][2],
-        Repair_Details: rData[i][3],
-        Before_Image: rData[i][4],
-        After_Image: rData[i][5],
-        Repair_Status: rData[i][6]
-      });
+  if (rSheet) {
+    var rData = rSheet.getDataRange().getValues();
+    for (var i = 1; i < rData.length; i++) {
+      if (rData[i][0] == ticketId) {
+        var rTime = rData[i][1];
+        if (rTime instanceof Date) {
+          rTime = Utilities.formatDate(rTime, "Asia/Bangkok", "yyyy-MM-dd'T'HH:mm:ss");
+        }
+        repairs.push({
+          Timestamp: (rTime !== undefined && rTime !== null) ? rTime : "",
+          Repairer: rData[i][2] || "",
+          Repair_Details: rData[i][3] || "",
+          Before_Image: rData[i][4] || "",
+          After_Image: rData[i][5] || "",
+          Repair_Status: rData[i][6] || ""
+        });
+      }
     }
   }
 
   // Get Spare Parts
   var spSheet = db.getSheetByName("SpareParts");
-  var spData = spSheet.getDataRange().getValues();
   var spareParts = [];
-  for (var i = 1; i < spData.length; i++) {
-    if (spData[i][1] == ticketId) {
-      spareParts.push({
-        Part_ID: spData[i][0],
-        Part_Name: spData[i][2],
-        Qty: spData[i][3],
-        Status: spData[i][4]
-      });
+  if (spSheet) {
+    var spData = spSheet.getDataRange().getValues();
+    for (var i = 1; i < spData.length; i++) {
+      if (spData[i][1] == ticketId) {
+        spareParts.push({
+          Part_ID: spData[i][0] || "",
+          Part_Name: spData[i][2] || "",
+          Qty: spData[i][3] || "",
+          Status: spData[i][4] || ""
+        });
+      }
     }
   }
 
