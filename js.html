@@ -843,8 +843,9 @@
           } else {
             let r = ev.data;
             let imgHtml = '';
-            if(r.Before_Image) imgHtml += `<a href="${r.Before_Image}" target="_blank"><img src="${r.Before_Image}" class="img-thumbnail me-2 mt-2" style="height:60px"></a>`;
-            if(r.After_Image) imgHtml += `<a href="${r.After_Image}" target="_blank"><img src="${r.After_Image}" class="img-thumbnail mt-2" style="height:60px"></a>`;
+            if(r.Before_Image) imgHtml += `<div class="d-inline-block position-relative me-2 mt-2" onclick="openImageModal('${r.Before_Image}', 'ภาพก่อนซ่อม (Before)')" style="cursor: pointer;" title="คลิกเพื่อดูรูปภาพขนาดใหญ่"><img src="${r.Before_Image}" class="img-thumbnail shadow-sm" style="height:60px; width:60px; object-fit:cover; border-radius:10px;" alt="Before"><span class="badge bg-dark bg-opacity-75 position-absolute bottom-0 start-0 m-1" style="font-size:0.65rem;">Before</span></div>`;
+            if(r.After_Image) imgHtml += `<div class="d-inline-block position-relative me-2 mt-2" onclick="openImageModal('${r.After_Image}', 'ภาพหลังซ่อม (After)')" style="cursor: pointer;" title="คลิกเพื่อดูรูปภาพขนาดใหญ่"><img src="${r.After_Image}" class="img-thumbnail shadow-sm" style="height:60px; width:60px; object-fit:cover; border-radius:10px;" alt="After"><span class="badge bg-success bg-opacity-75 position-absolute bottom-0 start-0 m-1" style="font-size:0.65rem;">After</span></div>`;
+
             
             tlContainer.innerHTML += `
               <div class="timeline-item">
@@ -939,4 +940,42 @@
       }
     }).addSparePart(data);
   });
+  // --- Image Modal Helper Functions ---
+  function openImageModal(imgUrl, title) {
+    const modalImg = document.getElementById('previewModalImg');
+    const modalTitle = document.getElementById('imageModalTitle');
+    const modalRawLink = document.getElementById('modalRawLink');
+    
+    let displayUrl = imgUrl;
+    if (imgUrl) {
+      const match = imgUrl.match(/[-\w]{25,}/);
+      if (match && !imgUrl.startsWith('data:image')) {
+        displayUrl = 'https://drive.google.com/thumbnail?id=' + match[0] + '&sz=w1200';
+      }
+    }
+    
+    if (modalImg) {
+      modalImg.src = displayUrl;
+      modalImg.onerror = function() {
+        const m = imgUrl.match(/[-\w]{25,}/);
+        if(m && !this.src.includes('googleusercontent')) {
+           this.src = 'https://lh3.googleusercontent.com/d/' + m[0];
+        }
+      };
+    }
+    if (modalTitle && title) {
+      modalTitle.innerText = title;
+    }
+    if (modalRawLink) {
+      modalRawLink.href = imgUrl;
+    }
+    
+    const modalEl = document.getElementById('imagePreviewModal');
+    if (modalEl) {
+      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modal.show();
+    }
+  }
+
+  window.openImageModal = openImageModal;
 </script>
