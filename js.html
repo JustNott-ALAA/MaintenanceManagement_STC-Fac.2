@@ -977,5 +977,37 @@
     }
   }
 
+  document.getElementById('selMachine')?.addEventListener('change', function(e) {
+    const detailEl = document.getElementById('machineDetailText');
+    if (!detailEl) return;
+    
+    const selectedId = e.target.value;
+    if (!selectedId) {
+      detailEl.classList.add('d-none');
+      return;
+    }
+    
+    const machine = allMachines.find(m => m.id === selectedId);
+    if (machine && machine.details) {
+      const d = machine.details;
+      let parts = [];
+      if (d.vendor) parts.push(`Vender: ${d.vendor}`);
+      if (d.mcModel) parts.push(`M/C Model: ${d.mcModel}`);
+      if (d.serNo) parts.push(`Ser.No.: ${d.serNo}`);
+      if (d.mfgDate) parts.push(`MFG.Date: ${d.mfgDate}`);
+      if (d.powerSupply) parts.push(`Power Supply: ${d.powerSupply}`);
+      if (d.option) parts.push(`Option: ${d.option}`);
+      
+      if (parts.length > 0) {
+        detailEl.innerHTML = parts.join(' | ');
+        detailEl.classList.remove('d-none');
+      } else {
+        detailEl.classList.add('d-none');
+      }
+    } else {
+      detailEl.classList.add('d-none');
+    }
+  });
+
   window.openImageModal = openImageModal;
 </script>

@@ -385,11 +385,33 @@ function getMachines() {
   var lineIndex = headers.indexOf("Line");
   if (lineIndex === -1) lineIndex = 2; // Default to index 2
   
+  var vendorIdx = headers.indexOf("Vender");
+  if (vendorIdx === -1) vendorIdx = headers.indexOf("Vendor"); // Fallback
+  
+  var mcModelIdx = headers.indexOf("M/C Model");
+  var serNoIdx = headers.indexOf("Ser.No.");
+  var mfgDateIdx = headers.indexOf("MFG.Date");
+  var powerSupplyIdx = headers.indexOf("Power Supply");
+  var optionIdx = headers.indexOf("Option");
+  
   for (var i = 1; i < data.length; i++) {
     if (data[i][lineIndex]) {
+      var mfgDate = mfgDateIdx > -1 ? data[i][mfgDateIdx] : "";
+      if (mfgDate instanceof Date) {
+         mfgDate = Utilities.formatDate(mfgDate, "Asia/Bangkok", "dd/MM/yyyy");
+      }
+      
       machines.push({
         id: data[i][lineIndex],
-        name: data[i][lineIndex]
+        name: data[i][lineIndex],
+        details: {
+          vendor: vendorIdx > -1 ? data[i][vendorIdx] : "",
+          mcModel: mcModelIdx > -1 ? data[i][mcModelIdx] : "",
+          serNo: serNoIdx > -1 ? data[i][serNoIdx] : "",
+          mfgDate: mfgDate,
+          powerSupply: powerSupplyIdx > -1 ? data[i][powerSupplyIdx] : "",
+          option: optionIdx > -1 ? data[i][optionIdx] : ""
+        }
       });
     }
   }
