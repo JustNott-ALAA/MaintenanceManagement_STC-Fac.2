@@ -685,6 +685,9 @@
               let parts = [];
               if (m.details.vendor) parts.push(m.details.vendor);
               if (m.details.mcModel) parts.push(m.details.mcModel);
+              if (m.details.serNo) parts.push(m.details.serNo);
+              if (m.details.mfgDate) parts.push('Mfg: ' + m.details.mfgDate);
+              if (m.details.option) parts.push(m.details.option);
               if (parts.length > 0) {
                 machineDetailText = `<div class="text-muted fw-normal text-truncate" style="font-size: 0.75rem; margin-top: 2px;">${parts.join(' | ')}</div>`;
               }
@@ -805,6 +808,27 @@
         const t = data.ticket;
         document.getElementById('detailTicketId').innerText = t.Ticket_ID || '';
         document.getElementById('detailMachine').innerText = t.Machine_ID || '-';
+        
+        let mDetailEl = document.getElementById('detailMachineDesc');
+        if (mDetailEl) {
+          mDetailEl.innerHTML = '';
+          if (t.Machine_ID && typeof allMachines !== 'undefined') {
+            let m = allMachines.find(x => x.name === t.Machine_ID || x.id === t.Machine_ID);
+            if (m && m.details) {
+              let parts = [];
+              if (m.details.vendor) parts.push(m.details.vendor);
+              if (m.details.mcModel) parts.push(m.details.mcModel);
+              if (m.details.serNo) parts.push(m.details.serNo);
+              if (m.details.mfgDate) parts.push('Mfg: ' + m.details.mfgDate);
+              if (m.details.option) parts.push(m.details.option);
+              
+              if (parts.length > 0) {
+                mDetailEl.innerHTML = parts.join(' | ');
+              }
+            }
+          }
+        }
+        
         document.getElementById('detailIssue').innerText = t.Issue || '-';
         document.getElementById('detailReporter').innerText = t.Reporter || '-';
         
@@ -846,12 +870,20 @@
           let dateStr = isNaN(ev.time.getTime()) ? '-' : ev.time.toLocaleString('th-TH');
           if(ev.type === 'status') {
             let h = ev.data;
+            let statusColor = "color: #0d6efd;"; // default primary
+            if (h.New_Status) {
+              if (h.New_Status.includes('เสร็จสิ้น')) statusColor = "color: #198754;"; // Green
+              else if (h.New_Status.includes('รอดำเนินการ')) statusColor = "color: #8B0000;"; // Dark Red
+              else if (h.New_Status.includes('กำลังซ่อม')) statusColor = "color: #D97706;"; // Amber/Yellow
+              else if (h.New_Status.includes('รออะไหล่')) statusColor = "color: #fd7e14;"; // Orange
+            }
+            
             tlContainer.innerHTML += `
               <div class="timeline-item">
                 <div class="timeline-marker bg-secondary"></div>
                 <div class="timeline-content">
                   <span class="timeline-date">${dateStr} - ${h.Update_By || '-'}</span>
-                  <p class="mb-0 fw-bold">เปลี่ยนสถานะ: <span class="text-muted">${h.Old_Status || '-'}</span> <i class="fas fa-arrow-right mx-1"></i> <span class="text-primary">${h.New_Status || '-'}</span></p>
+                  <p class="mb-0 fw-bold">เปลี่ยนสถานะ: <span class="text-muted">${h.Old_Status || '-'}</span> <i class="fas fa-arrow-right mx-1"></i> <span style="${statusColor}">${h.New_Status || '-'}</span></p>
                 </div>
               </div>
             `;
@@ -1008,10 +1040,9 @@
       let parts = [];
       if (d.vendor) parts.push(d.vendor);
       if (d.mcModel) parts.push(d.mcModel);
-      if (d.serNo) parts.push(`Ser.No.: ${d.serNo}`);
-      if (d.mfgDate) parts.push(`MFG.Date: ${d.mfgDate}`);
-      if (d.powerSupply) parts.push(`Power Supply: ${d.powerSupply}`);
-      if (d.option) parts.push(`Option: ${d.option}`);
+      if (d.serNo) parts.push(d.serNo);
+      if (d.mfgDate) parts.push(`Mfg: ${d.mfgDate}`);
+      if (d.option) parts.push(d.option);
       
       if (parts.length > 0) {
         detailEl.innerHTML = parts.join(' | ');
