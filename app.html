@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Maintenance Management System</title>
   
   <!-- Bootstrap 5 CSS -->
@@ -156,7 +159,7 @@
                 <div class="mb-3">
                   <label class="form-label fw-bold" data-i18n="selectMachine">เลือกเครื่องจักร (Line)</label>
                   <select id="selMachine" class="form-select" required>
-                    <option value="">-- กรุณาเลือก --</option>
+                    <option value="" data-i18n="selectPlaceholder">-- กรุณาเลือก --</option>
                   </select>
                   <div id="machineDetailText" class="form-text text-muted small mt-1" style="font-size: 0.75rem;">-</div>
                 </div>
@@ -187,16 +190,15 @@
                 </div>
 
                 <div class="row mb-4">
-                  <!-- IMAGE ATTACHMENTS FORCE UPDATE 2 -->
                   <div class="col-md-6 mb-3 mb-md-0">
                     <label class="form-label fw-bold"><i class="fas fa-camera me-1"></i> <span data-i18n="ticketImage1">รูปภาพประกอบ 1</span> <small class="text-muted fw-normal">(Optional)</small></label>
                     <input type="file" id="ticketImage1" class="form-control form-control-sm" accept="image/*">
-                    <div class="form-text small" style="font-size: 0.7rem;">(ไม่เกิน 2MB)</div>
+                    <div class="form-text small" style="font-size: 0.7rem;" data-i18n="maxSize2mb">(ไม่เกิน 2MB)</div>
                   </div>
                   <div class="col-md-6">
                     <label class="form-label fw-bold"><i class="fas fa-camera me-1"></i> <span data-i18n="ticketImage2">รูปภาพประกอบ 2</span> <small class="text-muted fw-normal">(Optional)</small></label>
                     <input type="file" id="ticketImage2" class="form-control form-control-sm" accept="image/*">
-                    <div class="form-text small" style="font-size: 0.7rem;">(ไม่เกิน 2MB)</div>
+                    <div class="form-text small" style="font-size: 0.7rem;" data-i18n="maxSize2mb">(ไม่เกิน 2MB)</div>
                   </div>
                 </div>
 
@@ -216,7 +218,7 @@
 
         <!-- Ticket Detail & Timeline (Hidden initially) -->
         <div id="page-ticketDetail" class="page-section d-none">
-          <button class="btn btn-outline-secondary btn-sm mb-3 rounded-pill" id="backToTickets"><i class="fas fa-arrow-left me-1"></i> กลับไปหน้ารายการ</button>
+          <button class="btn btn-outline-secondary btn-sm mb-3 rounded-pill" id="backToTickets"><i class="fas fa-arrow-left me-1"></i> <span data-i18n="backToTickets">กลับไปหน้ารายการ</span></button>
           
           <div class="row">
             <!-- Ticket Info -->
@@ -226,21 +228,21 @@
                   <h5 class="fw-bold text-primary mb-0" id="detailTicketId">TK000000</h5>
                 </div>
                 <div class="card-body">
-                  <p class="mb-1 text-muted small">เครื่องจักร</p>
+                  <p class="mb-1 text-muted small" data-i18n="detailMachine">เครื่องจักร</p>
                   <p class="fw-bold mb-0" id="detailMachine">-</p>
                   <div id="detailMachineDesc" class="text-muted fw-normal text-truncate mb-3" style="font-size: 0.75rem;"></div>
                   
-                  <p class="mb-1 text-muted small">อาการเสีย</p>
+                  <p class="mb-1 text-muted small" data-i18n="detailIssue">อาการเสีย</p>
                   <p class="mb-3" id="detailIssue">-</p>
                   <div id="detailImages" class="mb-3"></div>
                   
                   <div class="d-flex justify-content-between mb-3">
                     <div>
-                      <p class="mb-0 text-muted small">ผู้แจ้ง</p>
+                      <p class="mb-0 text-muted small" data-i18n="detailReporter">ผู้แจ้ง</p>
                       <p class="fw-bold mb-0" id="detailReporter">-</p>
                     </div>
                     <div class="text-end">
-                      <p class="mb-0 text-muted small">สถานะปัจจุบัน</p>
+                      <p class="mb-0 text-muted small" data-i18n="detailCurrentStatus">สถานะปัจจุบัน</p>
                       <span class="badge bg-warning text-dark" id="detailStatus">-</span>
                     </div>
                   </div>
@@ -248,11 +250,11 @@
                   <hr>
                   
                   <!-- Update Form -->
-                  <h6 class="fw-bold mb-3"><i class="fas fa-edit me-2"></i> อัปเดตงานซ่อม (สำหรับช่าง)</h6>
+                  <h6 class="fw-bold mb-3"><i class="fas fa-edit me-2"></i> <span data-i18n="techUpdateTitle">อัปเดตงานซ่อม (สำหรับช่าง)</span></h6>
                   <form id="updateTicketForm">
                     <input type="hidden" id="updTicketId">
                     <div class="mb-3">
-                      <label class="form-label small fw-bold">เปลี่ยนสถานะ</label>
+                      <label class="form-label small fw-bold" data-i18n="changeStatus">เปลี่ยนสถานะ</label>
                       <select id="updStatus" class="form-select form-select-sm">
                         <option value="รอดำเนินการ (Pending / 대기중)">รอดำเนินการ (Pending / 대기중)</option>
                         <option value="กำลังซ่อม (In Progress / 진행중)">กำลังซ่อม (In Progress / 진행중)</option>
@@ -261,24 +263,24 @@
                       </select>
                     </div>
                     <div class="mb-3">
-                      <label class="form-label small fw-bold">รายละเอียดการซ่อม</label>
+                      <label class="form-label small fw-bold" data-i18n="repairDetails">รายละเอียดการซ่อม</label>
                       <textarea id="updDetails" class="form-control form-control-sm" rows="2"></textarea>
                     </div>
                     
                     <div class="row mb-3">
                       <div class="col-6">
-                        <label class="form-label small fw-bold"><i class="fas fa-camera me-1"></i> ภาพก่อนซ่อม</label>
+                        <label class="form-label small fw-bold"><i class="fas fa-camera me-1"></i> <span data-i18n="imgBefore">ภาพก่อนซ่อม</span></label>
                         <input class="form-control form-control-sm" type="file" id="updBeforeImage" accept="image/*">
-                        <small class="text-muted" style="font-size:0.7rem;">(ไม่เกิน 2MB)</small>
+                        <small class="text-muted" style="font-size:0.7rem;" data-i18n="maxSize2mb">(ไม่เกิน 2MB)</small>
                       </div>
                       <div class="col-6">
-                        <label class="form-label small fw-bold"><i class="fas fa-camera me-1"></i> ภาพหลังซ่อม</label>
+                        <label class="form-label small fw-bold"><i class="fas fa-camera me-1"></i> <span data-i18n="imgAfter">ภาพหลังซ่อม</span></label>
                         <input class="form-control form-control-sm" type="file" id="updAfterImage" accept="image/*">
-                        <small class="text-muted" style="font-size:0.7rem;">(ไม่เกิน 2MB)</small>
+                        <small class="text-muted" style="font-size:0.7rem;" data-i18n="maxSize2mb">(ไม่เกิน 2MB)</small>
                       </div>
                     </div>
                     
-                    <button type="submit" class="btn btn-success btn-sm w-100 rounded-pill fw-bold">บันทึกการอัปเดต</button>
+                    <button type="submit" class="btn btn-success btn-sm w-100 rounded-pill fw-bold" data-i18n="btnSaveUpdate">บันทึกการอัปเดต</button>
                   </form>
                 </div>
               </div>
@@ -288,7 +290,7 @@
             <div class="col-lg-7">
               <div class="card shadow-sm border-0 rounded-4 h-100">
                 <div class="card-body p-4">
-                  <h5 class="fw-bold mb-4"><i class="fas fa-history me-2"></i> ประวัติการดำเนินการ (Timeline)</h5>
+                  <h5 class="fw-bold mb-4"><i class="fas fa-history me-2"></i> <span data-i18n="timelineTitle">ประวัติการดำเนินการ (Timeline)</span></h5>
                   <div class="timeline" id="timelineContainer">
                     <!-- Timeline items injected here -->
                   </div>
@@ -311,10 +313,10 @@
                 <table class="table table-hover mb-0">
                   <thead class="table-light">
                     <tr>
-                      <th>ใบงาน</th>
-                      <th>ชื่ออะไหล่</th>
-                      <th>จำนวน</th>
-                      <th>สถานะ</th>
+                      <th data-i18n="colTicketId">ใบงาน</th>
+                      <th data-i18n="colPartName">ชื่ออะไหล่</th>
+                      <th data-i18n="colQty">จำนวน</th>
+                      <th data-i18n="colStatus">สถานะ</th>
                     </tr>
                   </thead>
                   <tbody id="sparePartsTableBody">
@@ -364,31 +366,31 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content rounded-4 border-0 shadow">
         <div class="modal-header border-0">
-          <h5 class="modal-title fw-bold">แบบฟอร์มขอเบิกอะไหล่</h5>
+          <h5 class="modal-title fw-bold" data-i18n="spModalTitle">แบบฟอร์มขอเบิกอะไหล่</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body pb-4">
           <form id="addSparePartForm">
             <div class="mb-3">
-              <label class="form-label small fw-bold">รหัสใบงาน (Ticket ID)</label>
+              <label class="form-label small fw-bold" data-i18n="spTicketId">รหัสใบงาน (Ticket ID)</label>
               <input type="text" id="spTicketId" class="form-control" placeholder="เช่น TK230706-001" required>
             </div>
             <div class="mb-3">
-              <label class="form-label small fw-bold">ชื่ออะไหล่ / Part Name</label>
+              <label class="form-label small fw-bold" data-i18n="spName">ชื่ออะไหล่ / Part Name</label>
               <input type="text" id="spName" class="form-control" required>
             </div>
             <div class="mb-3">
-              <label class="form-label small fw-bold">จำนวน</label>
+              <label class="form-label small fw-bold" data-i18n="spQty">จำนวน</label>
               <input type="number" id="spQty" class="form-control" min="1" value="1" required>
             </div>
             <div class="mb-4">
-              <label class="form-label small fw-bold">สถานะเริ่มต้น</label>
+              <label class="form-label small fw-bold" data-i18n="spStatus">สถานะเริ่มต้น</label>
               <select id="spStatus" class="form-select">
                 <option value="รอขอซื้อ">รอขอซื้อ (Request)</option>
                 <option value="PR/PO">กำลังทำ PR/PO</option>
               </select>
             </div>
-            <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold">บันทึกข้อมูล</button>
+            <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold" data-i18n="btnSavePart">บันทึกข้อมูล</button>
           </form>
         </div>
       </div>

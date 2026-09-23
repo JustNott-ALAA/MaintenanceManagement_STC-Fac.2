@@ -57,7 +57,36 @@
       swalConfirm: "ยืนยัน",
       swalCancel: "ยกเลิก",
       swalSuccess: "สำเร็จ",
-      swalError: "ผิดพลาด"
+      swalError: "ผิดพลาด",
+      selectPlaceholder: "-- กรุณาเลือก --",
+      urgencyPlaceholder: "-- กรุณาเลือก --",
+      ticketImage1: "รูปภาพประกอบ 1",
+      ticketImage2: "รูปภาพประกอบ 2",
+      maxSize2mb: "(ไม่เกิน 2MB)",
+      backToTickets: "กลับไปหน้ารายการ",
+      detailMachine: "เครื่องจักร",
+      detailIssue: "อาการเสีย",
+      detailReporter: "ผู้แจ้ง",
+      detailCurrentStatus: "สถานะปัจจุบัน",
+      techUpdateTitle: "อัปเดตงานซ่อม (สำหรับช่าง)",
+      changeStatus: "เปลี่ยนสถานะ:",
+      repairDetails: "รายละเอียดการซ่อม",
+      imgBefore: "ภาพก่อนซ่อม",
+      imgAfter: "ภาพหลังซ่อม",
+      btnSaveUpdate: "บันทึกการอัปเดต",
+      timelineTitle: "ประวัติการดำเนินการ (Timeline)",
+      changeStatusPrefix: "เปลี่ยนสถานะ:",
+      repairHistoryPrefix: "อัปเดตงานซ่อม",
+      noTimeline: "ยังไม่มีประวัติการดำเนินการ",
+      colTicketId: "ใบงาน",
+      colPartName: "ชื่ออะไหล่",
+      colQty: "จำนวน",
+      spModalTitle: "แบบฟอร์มขอเบิกอะไหล่",
+      spTicketId: "รหัสใบงาน (Ticket ID)",
+      spName: "ชื่ออะไหล่ / Part Name",
+      spQty: "จำนวน",
+      spStatus: "สถานะเริ่มต้น",
+      btnSavePart: "บันทึกข้อมูล"
     },
     en: {
       appTitle: "Maintenance System",
@@ -116,7 +145,36 @@
       swalConfirm: "Confirm",
       swalCancel: "Cancel",
       swalSuccess: "Success",
-      swalError: "Error"
+      swalError: "Error",
+      selectPlaceholder: "-- Please select --",
+      urgencyPlaceholder: "-- Please select --",
+      ticketImage1: "Attachment 1",
+      ticketImage2: "Attachment 2",
+      maxSize2mb: "(Max 2MB)",
+      backToTickets: "Back to Ticket List",
+      detailMachine: "Machine",
+      detailIssue: "Issue / Problem",
+      detailReporter: "Reporter",
+      detailCurrentStatus: "Current Status",
+      techUpdateTitle: "Update Repair (For Tech)",
+      changeStatus: "Change Status:",
+      repairDetails: "Repair Details",
+      imgBefore: "Before Repair",
+      imgAfter: "After Repair",
+      btnSaveUpdate: "Save Update",
+      timelineTitle: "Action History (Timeline)",
+      changeStatusPrefix: "Change Status:",
+      repairHistoryPrefix: "Repair Update",
+      noTimeline: "No history records yet",
+      colTicketId: "Ticket ID",
+      colPartName: "Part Name",
+      colQty: "Qty",
+      spModalTitle: "Request Spare Part Form",
+      spTicketId: "Ticket ID",
+      spName: "Part Name",
+      spQty: "Quantity",
+      spStatus: "Initial Status",
+      btnSavePart: "Save Data"
     },
     ko: {
       appTitle: "유지보수 시스템",
@@ -175,11 +233,44 @@
       swalConfirm: "확인",
       swalCancel: "취소",
       swalSuccess: "성공",
-      swalError: "오류"
+      swalError: "오류",
+      selectPlaceholder: "-- 선택해주세요 --",
+      urgencyPlaceholder: "-- 선택해주세요 --",
+      ticketImage1: "첨부 이미지 1",
+      ticketImage2: "첨부 이미지 2",
+      maxSize2mb: "(최대 2MB)",
+      backToTickets: "목록으로 돌아가기",
+      detailMachine: "기계",
+      detailIssue: "고장 증상",
+      detailReporter: "보고자",
+      detailCurrentStatus: "현재 상태",
+      techUpdateTitle: "수리 내용 업데이트 (정비용)",
+      changeStatus: "상태 변경:",
+      repairDetails: "수리 상세 내용",
+      imgBefore: "수리 전 사진",
+      imgAfter: "수리 후 사진",
+      btnSaveUpdate: "업데이트 저장",
+      timelineTitle: "작업 이력 (타임라인)",
+      changeStatusPrefix: "상태 변경:",
+      repairHistoryPrefix: "수리 내역",
+      noTimeline: "작업 이력이 없습니다",
+      colTicketId: "수리 번호",
+      colPartName: "부품명",
+      colQty: "수량",
+      spModalTitle: "부품 요청 양식",
+      spTicketId: "수리 번호 (Ticket ID)",
+      spName: "부품명",
+      spQty: "수량",
+      spStatus: "초기 상태",
+      btnSavePart: "저장하기"
     }
   };
 
+  let currentLang = localStorage.getItem('mms_lang') || 'th';
+  let currentTicketDetailData = null;
+
   function changeLanguage(lang) {
+    currentLang = lang;
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const key = el.getAttribute('data-i18n');
       if (i18n[lang] && i18n[lang][key]) {
@@ -192,6 +283,22 @@
         el.setAttribute('placeholder', i18n[lang][key]);
       }
     });
+
+    // Update select placeholder options
+    const selMachOpt = document.querySelector('#selMachine option[value=""]');
+    if (selMachOpt && i18n[lang] && i18n[lang].selectPlaceholder) {
+      selMachOpt.innerText = i18n[lang].selectPlaceholder;
+    }
+    const urgOpt = document.querySelector('#urgency option[value=""]');
+    if (urgOpt && i18n[lang] && i18n[lang].urgencyPlaceholder) {
+      urgOpt.innerText = i18n[lang].urgencyPlaceholder;
+    }
+
+    // Re-render timeline if on ticket detail page
+    const detailPage = document.getElementById('page-ticketDetail');
+    if (detailPage && !detailPage.classList.contains('d-none') && currentTicketDetailData) {
+      renderTimeline(currentTicketDetailData);
+    }
   }
 
   function isEnglishOnly(str) {
@@ -632,7 +739,8 @@
         // Render Dropdown
         const mSelect = document.getElementById('selMachine');
         if (mSelect) {
-          mSelect.innerHTML = '<option value="">-- กรุณาเลือก --</option>';
+          const ph = (i18n[currentLang] && i18n[currentLang].selectPlaceholder) || '-- กรุณาเลือก --';
+          mSelect.innerHTML = `<option value="" data-i18n="selectPlaceholder">${ph}</option>`;
           if (machines) {
             machines.forEach(m => {
               mSelect.innerHTML += `<option value="${m.id}">${m.name}</option>`;
@@ -912,77 +1020,95 @@
         document.getElementById('updBeforeImage').value = '';
         document.getElementById('updAfterImage').value = '';
 
+        // Save current data for reactivity
+        currentTicketDetailData = data;
+
         // Build Timeline
-        const tlContainer = document.getElementById('timelineContainer');
-        tlContainer.innerHTML = '';
+        renderTimeline(data);
         
-        let allEvents = [];
-        if (data.history && Array.isArray(data.history)) {
-          data.history.forEach(h => {
-            let tDate = h.Timestamp ? new Date(h.Timestamp) : new Date(0);
-            allEvents.push({ type: 'status', time: tDate, data: h });
-          });
-        }
-        if (data.repairs && Array.isArray(data.repairs)) {
-          data.repairs.forEach(r => {
-            let tDate = r.Timestamp ? new Date(r.Timestamp) : new Date(0);
-            allEvents.push({ type: 'repair', time: tDate, data: r });
-          });
-        }
-        
-        // Sort desc
-        allEvents.sort((a,b) => b.time - a.time);
-
-        if(allEvents.length === 0) tlContainer.innerHTML = '<p class="text-muted">ยังไม่มีประวัติการดำเนินการ</p>';
-
-        allEvents.forEach(ev => {
-          let dateStr = isNaN(ev.time.getTime()) ? '-' : ev.time.toLocaleString('th-TH');
-          if(ev.type === 'status') {
-            let h = ev.data;
-            let statusColor = "color: #0d6efd;"; // default primary
-            if (h.New_Status) {
-              if (h.New_Status.includes('เสร็จสิ้น')) statusColor = "color: #198754;"; // Green
-              else if (h.New_Status.includes('รอดำเนินการ')) statusColor = "color: #8B0000;"; // Dark Red
-              else if (h.New_Status.includes('กำลังซ่อม')) statusColor = "color: #D97706;"; // Amber/Yellow
-              else if (h.New_Status.includes('รออะไหล่')) statusColor = "color: #fd7e14;"; // Orange
-            }
-            
-            tlContainer.innerHTML += `
-              <div class="timeline-item">
-                <div class="timeline-marker bg-secondary"></div>
-                <div class="timeline-content">
-                  <span class="timeline-date">${dateStr} - ${h.Update_By || '-'}</span>
-                  <p class="mb-0 fw-bold">เปลี่ยนสถานะ: <span class="text-muted">${h.Old_Status || '-'}</span> <i class="fas fa-arrow-right mx-1"></i> <span style="${statusColor}">${h.New_Status || '-'}</span></p>
-                </div>
-              </div>
-            `;
-          } else {
-            let r = ev.data;
-            let imgHtml = '';
-            if(r.Before_Image) imgHtml += `<div class="d-inline-block position-relative me-2 mt-2" onclick="openImageModal('${r.Before_Image}', 'ภาพก่อนซ่อม (Before)')" style="cursor: pointer;" title="คลิกเพื่อดูรูปภาพขนาดใหญ่"><img src="${r.Before_Image}" class="img-thumbnail shadow-sm" style="height:60px; width:60px; object-fit:cover; border-radius:10px;" alt="Before"><span class="badge bg-dark bg-opacity-75 position-absolute bottom-0 start-0 m-1" style="font-size:0.65rem;">Before</span></div>`;
-            if(r.After_Image) imgHtml += `<div class="d-inline-block position-relative me-2 mt-2" onclick="openImageModal('${r.After_Image}', 'ภาพหลังซ่อม (After)')" style="cursor: pointer;" title="คลิกเพื่อดูรูปภาพขนาดใหญ่"><img src="${r.After_Image}" class="img-thumbnail shadow-sm" style="height:60px; width:60px; object-fit:cover; border-radius:10px;" alt="After"><span class="badge bg-success bg-opacity-75 position-absolute bottom-0 start-0 m-1" style="font-size:0.65rem;">After</span></div>`;
-
-            
-            tlContainer.innerHTML += `
-              <div class="timeline-item">
-                <div class="timeline-marker bg-primary"></div>
-                <div class="timeline-content">
-                  <span class="timeline-date">${dateStr} - ${r.Repairer || '-'}</span>
-                  <p class="mb-1 text-primary fw-bold"><i class="fas fa-wrench me-1"></i> อัปเดตงานซ่อม</p>
-                  ${r.Repair_Details ? `<p class="mb-0 small">${r.Repair_Details}</p>` : ''}
-                  <div class="timeline-images">${imgHtml}</div>
-                </div>
-              </div>
-            `;
-          }
-        });
-        
+        // Apply Language
+        changeLanguage(currentLang);
       })
       .withFailureHandler((err) => {
         hideLoading();
         Swal.fire({ icon: 'error', title: 'Error', text: err.toString() });
       })
       .getTicketDetails(ticketId);
+  }
+
+  function renderTimeline(data) {
+    if (!data) return;
+    const tlContainer = document.getElementById('timelineContainer');
+    if (!tlContainer) return;
+    tlContainer.innerHTML = '';
+    
+    let allEvents = [];
+    if (data.history && Array.isArray(data.history)) {
+      data.history.forEach(h => {
+        let tDate = h.Timestamp ? new Date(h.Timestamp) : new Date(0);
+        allEvents.push({ type: 'status', time: tDate, data: h });
+      });
+    }
+    if (data.repairs && Array.isArray(data.repairs)) {
+      data.repairs.forEach(r => {
+        let tDate = r.Timestamp ? new Date(r.Timestamp) : new Date(0);
+        allEvents.push({ type: 'repair', time: tDate, data: r });
+      });
+    }
+    
+    allEvents.sort((a,b) => b.time - a.time);
+
+    const noTl = (i18n[currentLang] && i18n[currentLang].noTimeline) || 'ยังไม่มีประวัติการดำเนินการ';
+    if(allEvents.length === 0) {
+      tlContainer.innerHTML = `<p class="text-muted">${noTl}</p>`;
+      return;
+    }
+
+    const chgStatusText = (i18n[currentLang] && i18n[currentLang].changeStatusPrefix) || 'เปลี่ยนสถานะ:';
+    const repHistoryText = (i18n[currentLang] && i18n[currentLang].repairHistoryPrefix) || 'อัปเดตงานซ่อม';
+    const localeMap = { th: 'th-TH', en: 'en-US', ko: 'ko-KR' };
+    const dateLocale = localeMap[currentLang] || 'th-TH';
+
+    allEvents.forEach(ev => {
+      let dateStr = isNaN(ev.time.getTime()) ? '-' : ev.time.toLocaleString(dateLocale);
+      if(ev.type === 'status') {
+        let h = ev.data;
+        let statusColor = "color: #0d6efd;";
+        if (h.New_Status) {
+          if (h.New_Status.includes('เสร็จสิ้น')) statusColor = "color: #198754;";
+          else if (h.New_Status.includes('รอดำเนินการ')) statusColor = "color: #8B0000;";
+          else if (h.New_Status.includes('กำลังซ่อม')) statusColor = "color: #D97706;";
+          else if (h.New_Status.includes('รออะไหล่')) statusColor = "color: #fd7e14;";
+        }
+        
+        tlContainer.innerHTML += `
+          <div class="timeline-item">
+            <div class="timeline-marker bg-secondary"></div>
+            <div class="timeline-content">
+              <span class="timeline-date">${dateStr} - ${h.Update_By || '-'}</span>
+              <p class="mb-0 fw-bold">${chgStatusText} <span class="text-muted">${h.Old_Status || '-'}</span> <i class="fas fa-arrow-right mx-1"></i> <span style="${statusColor}">${h.New_Status || '-'}</span></p>
+            </div>
+          </div>
+        `;
+      } else {
+        let r = ev.data;
+        let imgHtml = '';
+        if(r.Before_Image) imgHtml += `<div class="d-inline-block position-relative me-2 mt-2" onclick="openImageModal('${r.Before_Image}', 'Before')" style="cursor: pointer;" title="Zoom"><img src="${r.Before_Image}" class="img-thumbnail shadow-sm" style="height:60px; width:60px; object-fit:cover; border-radius:10px;" alt="Before"><span class="badge bg-dark bg-opacity-75 position-absolute bottom-0 start-0 m-1" style="font-size:0.65rem;">Before</span></div>`;
+        if(r.After_Image) imgHtml += `<div class="d-inline-block position-relative me-2 mt-2" onclick="openImageModal('${r.After_Image}', 'After')" style="cursor: pointer;" title="Zoom"><img src="${r.After_Image}" class="img-thumbnail shadow-sm" style="height:60px; width:60px; object-fit:cover; border-radius:10px;" alt="After"><span class="badge bg-success bg-opacity-75 position-absolute bottom-0 start-0 m-1" style="font-size:0.65rem;">After</span></div>`;
+
+        tlContainer.innerHTML += `
+          <div class="timeline-item">
+            <div class="timeline-marker bg-primary"></div>
+            <div class="timeline-content">
+              <span class="timeline-date">${dateStr} - ${r.Repairer || '-'}</span>
+              <p class="mb-1 text-primary fw-bold"><i class="fas fa-wrench me-1"></i> ${repHistoryText}</p>
+              ${r.Repair_Details ? `<p class="mb-0 small">${r.Repair_Details}</p>` : ''}
+              <div class="timeline-images">${imgHtml}</div>
+            </div>
+          </div>
+        `;
+      }
+    });
   }
 
   // --- Back Button ---
