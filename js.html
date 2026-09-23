@@ -86,7 +86,8 @@
       spName: "ชื่ออะไหล่ / Part Name",
       spQty: "จำนวน",
       spStatus: "สถานะเริ่มต้น",
-      btnSavePart: "บันทึกข้อมูล"
+      btnSavePart: "บันทึกข้อมูล",
+      reportImageLabel: "รูปภาพจากการแจ้งซ่อม"
     },
     en: {
       appTitle: "Maintenance System",
@@ -174,7 +175,8 @@
       spName: "Part Name",
       spQty: "Quantity",
       spStatus: "Initial Status",
-      btnSavePart: "Save Data"
+      btnSavePart: "Save Data",
+      reportImageLabel: "Report Attachment"
     },
     ko: {
       appTitle: "유지보수 시스템",
@@ -262,7 +264,8 @@
       spName: "부품명",
       spQty: "수량",
       spStatus: "초기 상태",
-      btnSavePart: "저장하기"
+      btnSavePart: "저장하기",
+      reportImageLabel: "신고 첨부 사진"
     }
   };
 
@@ -999,11 +1002,14 @@
         document.getElementById('detailIssue').innerText = t.Issue || '-';
         
         let dImgHtml = '';
-        if (t.Image_1) {
-          dImgHtml += `<div class="d-inline-block position-relative me-2 mt-2" onclick="openImageModal('${t.Image_1}', 'รูปภาพประกอบ 1')" style="cursor: pointer;"><img src="${t.Image_1}" class="img-thumbnail shadow-sm" style="height:80px; width:80px; object-fit:cover; border-radius:10px;" alt="Image 1"></div>`;
+        let img1 = t.Image_1 || t.Attachment1;
+        let img2 = t.Image_2 || t.Attachment2;
+        let repLbl = (i18n[currentLang] && i18n[currentLang].reportImageLabel) || 'รูปภาพจากการแจ้งซ่อม';
+        if (img1) {
+          dImgHtml += `<div class="d-inline-block position-relative me-2 mt-2" onclick="openImageModal('${img1}', '${repLbl} 1')" style="cursor: pointer;" title="Zoom"><img src="${img1}" class="img-thumbnail shadow-sm" style="height:80px; width:80px; object-fit:cover; border-radius:10px;" alt="Image 1"></div>`;
         }
-        if (t.Image_2) {
-          dImgHtml += `<div class="d-inline-block position-relative me-2 mt-2" onclick="openImageModal('${t.Image_2}', 'รูปภาพประกอบ 2')" style="cursor: pointer;"><img src="${t.Image_2}" class="img-thumbnail shadow-sm" style="height:80px; width:80px; object-fit:cover; border-radius:10px;" alt="Image 2"></div>`;
+        if (img2) {
+          dImgHtml += `<div class="d-inline-block position-relative me-2 mt-2" onclick="openImageModal('${img2}', '${repLbl} 2')" style="cursor: pointer;" title="Zoom"><img src="${img2}" class="img-thumbnail shadow-sm" style="height:80px; width:80px; object-fit:cover; border-radius:10px;" alt="Image 2"></div>`;
         }
         document.getElementById('detailImages').innerHTML = dImgHtml;
 
@@ -1066,10 +1072,14 @@
 
     const chgStatusText = (i18n[currentLang] && i18n[currentLang].changeStatusPrefix) || 'เปลี่ยนสถานะ:';
     const repHistoryText = (i18n[currentLang] && i18n[currentLang].repairHistoryPrefix) || 'อัปเดตงานซ่อม';
+    const repLbl = (i18n[currentLang] && i18n[currentLang].reportImageLabel) || 'รูปภาพจากการแจ้งซ่อม';
     const localeMap = { th: 'th-TH', en: 'en-US', ko: 'ko-KR' };
     const dateLocale = localeMap[currentLang] || 'th-TH';
 
-    allEvents.forEach(ev => {
+    const tImg1 = data.ticket ? (data.ticket.Image_1 || data.ticket.Attachment1) : '';
+    const tImg2 = data.ticket ? (data.ticket.Image_2 || data.ticket.Attachment2) : '';
+
+    allEvents.forEach((ev, idx) => {
       let dateStr = isNaN(ev.time.getTime()) ? '-' : ev.time.toLocaleString(dateLocale);
       if(ev.type === 'status') {
         let h = ev.data;
@@ -1081,12 +1091,24 @@
           else if (h.New_Status.includes('รออะไหล่')) statusColor = "color: #fd7e14;";
         }
         
+        let isInitialCreation = (h.Old_Status === 'New' || h.Old_Status === '-' || idx === allEvents.length - 1);
+        let reportImgHtml = '';
+        if (isInitialCreation && (tImg1 || tImg2)) {
+          if (tImg1) {
+            reportImgHtml += `<div class="d-inline-block position-relative me-2 mt-2" onclick="openImageModal('${tImg1}', '${repLbl} 1')" style="cursor: pointer;" title="Zoom"><img src="${tImg1}" class="img-thumbnail shadow-sm" style="height:60px; width:60px; object-fit:cover; border-radius:10px;" alt="Report 1"></div>`;
+          }
+          if (tImg2) {
+            reportImgHtml += `<div class="d-inline-block position-relative me-2 mt-2" onclick="openImageModal('${tImg2}', '${repLbl} 2')" style="cursor: pointer;" title="Zoom"><img src="${tImg2}" class="img-thumbnail shadow-sm" style="height:60px; width:60px; object-fit:cover; border-radius:10px;" alt="Report 2"></div>`;
+          }
+        }
+
         tlContainer.innerHTML += `
           <div class="timeline-item">
             <div class="timeline-marker bg-secondary"></div>
             <div class="timeline-content">
               <span class="timeline-date">${dateStr} - ${h.Update_By || '-'}</span>
               <p class="mb-0 fw-bold">${chgStatusText} <span class="text-muted">${h.Old_Status || '-'}</span> <i class="fas fa-arrow-right mx-1"></i> <span style="${statusColor}">${h.New_Status || '-'}</span></p>
+              ${reportImgHtml ? `<div class="timeline-images mt-1">${reportImgHtml}</div>` : ''}
             </div>
           </div>
         `;

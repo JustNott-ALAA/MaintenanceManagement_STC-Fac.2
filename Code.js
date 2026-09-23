@@ -435,6 +435,8 @@ function getTickets() {
       }
       obj[headers[j]] = (val !== undefined && val !== null) ? val : "";
     }
+    obj.Image_1 = obj.Image_1 || obj.Attachment1 || obj.image1 || "";
+    obj.Image_2 = obj.Image_2 || obj.Attachment2 || obj.image2 || "";
     tickets.push(obj);
   }
   return tickets.reverse(); // Newest first
@@ -460,6 +462,8 @@ function getTicketDetails(ticketId) {
             }
             ticketInfo[tHeaders[j]] = (val !== undefined && val !== null) ? val : "";
           }
+          ticketInfo.Image_1 = ticketInfo.Image_1 || ticketInfo.Attachment1 || ticketInfo.image1 || "";
+          ticketInfo.Image_2 = ticketInfo.Image_2 || ticketInfo.Attachment2 || ticketInfo.image2 || "";
           break;
         }
       }
