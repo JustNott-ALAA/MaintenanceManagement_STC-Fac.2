@@ -756,7 +756,7 @@
   });
 
   // --- Create Ticket ---
-  document.getElementById('createTicketForm').addEventListener('submit', (e) => {
+  document.getElementById('createTicketForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
     let originalText = document.getElementById('transInput').value.trim();
@@ -786,24 +786,64 @@
     if (originalText) {
       combinedIssue = originalText + "_" + engText;
     }
+    
+    let btnSubmit = document.querySelector('#createTicketForm button[type="submit"]');
+    if (btnSubmit) {
+       btnSubmit.disabled = true;
+       btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> กำลังอัปโหลด...';
+    }
 
-    let data = {
-      machineId: document.getElementById('selMachine').value,
-      issue: combinedIssue,
-      urgency: document.getElementById('urgency').value,
-      reporter: currentUser.name
-    };
+    let img1File = document.getElementById('ticketImage1').files[0];
+    let img2File = document.getElementById('ticketImage2').files[0];
+    
+    // Simple 2MB size check
+    if (img1File && img1File.size > 2 * 1024 * 1024) {
+      Swal.fire('Warning', 'รูปภาพประกอบ 1 มีขนาดเกิน 2MB', 'warning');
+      if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = '<i class="fas fa-paper-plane me-2"></i> ส่งใบแจ้งซ่อม'; }
+      return;
+    }
+    if (img2File && img2File.size > 2 * 1024 * 1024) {
+      Swal.fire('Warning', 'รูปภาพประกอบ 2 มีขนาดเกิน 2MB', 'warning');
+      if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = '<i class="fas fa-paper-plane me-2"></i> ส่งใบแจ้งซ่อม'; }
+      return;
+    }
+
+    let b64Img1 = null;
+    let b64Img2 = null;
     
     showLoading();
+    try {
+      if (img1File) b64Img1 = await getBase64(img1File);
+      if (img2File) b64Img2 = await getBase64(img2File);
+    } catch(err) {
+      hideLoading();
+      Swal.fire('Error', 'ไม่สามารถอ่านไฟล์รูปภาพได้', 'error');
+      if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = '<i class="fas fa-paper-plane me-2"></i> ส่งใบแจ้งซ่อม'; }
+      return;
+    }
+
+    let data = {
+      machineId: selMachine,
+      issue: combinedIssue,
+      urgency: urgency,
+      reporter: currentUser.name,
+      image1Base64: b64Img1,
+      image2Base64: b64Img2
+    };
+    
     google.script.run.withSuccessHandler((res) => {
       hideLoading();
+      if(btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = '<i class="fas fa-paper-plane me-2"></i> <span data-i18n="submitTicket">ส่งใบแจ้งซ่อม</span>'; }
       if(res.success) {
-        Swal.fire({ icon: 'success', title: 'สำเร็จ', text: `สร้างใบงาน ${res.ticketId} เรียบร้อย` });
+        Swal.fire({ icon: 'success', title: 'สำเร็จ', text: `บันทึกหมายเลข ${res.ticketId} เรียบร้อย` });
         document.getElementById('createTicketForm').reset();
-        
-        // Go to Ticket List
+        document.getElementById('machineDetailText').innerHTML = '-'; // Reset details text
         document.querySelector('#sidebar .nav-link[data-page="updateTicket"]').click();
       }
+    }).withFailureHandler((err) => {
+      hideLoading();
+      if(btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = '<i class="fas fa-paper-plane me-2"></i> <span data-i18n="submitTicket">ส่งใบแจ้งซ่อม</span>'; }
+      Swal.fire('Error', err.toString(), 'error');
     }).createTicket(data);
   });
 
@@ -849,6 +889,16 @@
         }
         
         document.getElementById('detailIssue').innerText = t.Issue || '-';
+        
+        let dImgHtml = '';
+        if (t.Image_1) {
+          dImgHtml += `<div class="d-inline-block position-relative me-2 mt-2" onclick="openImageModal('${t.Image_1}', 'รูปภาพประกอบ 1')" style="cursor: pointer;"><img src="${t.Image_1}" class="img-thumbnail shadow-sm" style="height:80px; width:80px; object-fit:cover; border-radius:10px;" alt="Image 1"></div>`;
+        }
+        if (t.Image_2) {
+          dImgHtml += `<div class="d-inline-block position-relative me-2 mt-2" onclick="openImageModal('${t.Image_2}', 'รูปภาพประกอบ 2')" style="cursor: pointer;"><img src="${t.Image_2}" class="img-thumbnail shadow-sm" style="height:80px; width:80px; object-fit:cover; border-radius:10px;" alt="Image 2"></div>`;
+        }
+        document.getElementById('detailImages').innerHTML = dImgHtml;
+
         document.getElementById('detailReporter').innerText = t.Reporter || '-';
         
         let bClass = (t.Status && t.Status.includes('เสร็จสิ้น')) ? 'bg-success' : 'bg-warning';
@@ -1065,12 +1115,11 @@
       
       if (parts.length > 0) {
         detailEl.innerHTML = parts.join(' | ');
-        detailEl.classList.remove('d-none');
       } else {
-        detailEl.classList.add('d-none');
+        detailEl.innerHTML = '-';
       }
     } else {
-      detailEl.classList.add('d-none');
+      detailEl.innerHTML = '-';
     }
   });
 

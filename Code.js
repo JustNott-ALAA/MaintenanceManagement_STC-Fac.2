@@ -35,7 +35,7 @@ function setupDatabase() {
     { name: "Equipments", headers: ["Serial Number", "TYPE", "Controller", "Fac", "Line", "MODEL", "Vendor", "QR Code코드", "QR Image코드이미지", "FAC2", "Remark"] },
     { name: "Repair History", headers: ["Date", "Serial Number", "Ticket_ID", "TYPE", "FAC2", "LINE", "Task Classification", "Before Symptoms", "Before Problem", "After Repair Completed", "PART", "Repair Started", "Repair Ended", "Total Time (Minutes)", "Worker작업자", "Before1", "Before2", "Before3", "After1", "After2", "After3", "Before1 Preview", "Before2 Preview", "Before3 Preview", "After1 Preview", "After2 Preview", "After3 Preview"] },
     { name: "Machines", headers: ["Machine_ID", "Machine_Name", "PM_Type", "Last_PM_Date", "Next_PM_Date", "Location", "QR_Link", "History_Link"] },
-    { name: "Tickets", headers: ["Ticket_ID", "Timestamp", "Machine_ID", "Issue", "Reporter", "Status", "Urgency"] },
+    { name: "Tickets", headers: ["Ticket_ID", "Timestamp", "Machine_ID", "Issue", "Reporter", "Status", "Urgency", "Image_1", "Image_2"] },
     { name: "History", headers: ["Ticket_ID", "Timestamp", "Old_Status", "New_Status", "Update_By"] },
     { name: "Repairs", headers: ["Ticket_ID", "Timestamp", "Repairer", "Repair_Details", "Before_Image", "After_Image", "Repair_Status"] },
     { name: "SpareParts", headers: ["Part_ID", "Ticket_ID", "Part_Name", "Qty", "Status"] }
@@ -557,6 +557,16 @@ function createTicket(data) {
   var ticketId = "TK" + dateStr + "-" + Utilities.formatString("%03d", seq);
 
   var status = "รอดำเนินการ (Pending / 대기중)";
+  
+  var img1Url = "";
+  var img2Url = "";
+  if (data.image1Base64) {
+    img1Url = uploadImageToDrive(data.image1Base64, ticketId + "_Prob1");
+  }
+  if (data.image2Base64) {
+    img2Url = uploadImageToDrive(data.image2Base64, ticketId + "_Prob2");
+  }
+
   sheet.appendRow([
     ticketId, 
     timestamp, 
@@ -564,7 +574,9 @@ function createTicket(data) {
     data.issue, 
     data.reporter, 
     status,
-    data.urgency || "ปกติ (Normal / 보통)"
+    data.urgency || "ปกติ (Normal / 보통)",
+    img1Url,
+    img2Url
   ]);
 
   var hSheet = getDB().getSheetByName("History");

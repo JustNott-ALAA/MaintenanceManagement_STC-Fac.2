@@ -158,7 +158,7 @@
                   <select id="selMachine" class="form-select" required>
                     <option value="">-- กรุณาเลือก --</option>
                   </select>
-                  <div id="machineDetailText" class="form-text text-muted small mt-1 d-none" style="font-size: 0.75rem;"></div>
+                  <div id="machineDetailText" class="form-text text-muted small mt-1" style="font-size: 0.75rem;">-</div>
                 </div>
                 <div class="mb-3">
                   <label class="form-label fw-bold" data-i18n="issueDesc">ปัญหาที่พบ / อาการเสีย</label>
@@ -182,9 +182,23 @@
                     <option value="" disabled selected data-i18n="urgencyPlaceholder">-- กรุณาเลือก --</option>
                     <option value="ปกติ (Normal / 보통)">ปกติ (Normal / 보통)</option>
                     <option value="ด่วน (Urgent / 긴급)">ด่วน (Urgent / 긴급)</option>
-                    <option value="ด่วนมาก (Critical / 매우 긴급)">ด่วนมาก (Critical / 매우 긴급)</option>
+                    <option value="ด่วนมาก (Critical / 초 긴급)">ด่วนมาก (Critical / 초 긴급)</option>
                   </select>
                 </div>
+
+                <div class="row mb-4">
+                  <div class="col-md-6 mb-3 mb-md-0">
+                    <label class="form-label fw-bold"><i class="fas fa-camera me-1"></i> <span data-i18n="ticketImage1">รูปภาพประกอบ 1</span> <small class="text-muted fw-normal">(Optional)</small></label>
+                    <input type="file" id="ticketImage1" class="form-control form-control-sm" accept="image/*">
+                    <div class="form-text small" style="font-size: 0.7rem;">(ไม่เกิน 2MB)</div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold"><i class="fas fa-camera me-1"></i> <span data-i18n="ticketImage2">รูปภาพประกอบ 2</span> <small class="text-muted fw-normal">(Optional)</small></label>
+                    <input type="file" id="ticketImage2" class="form-control form-control-sm" accept="image/*">
+                    <div class="form-text small" style="font-size: 0.7rem;">(ไม่เกิน 2MB)</div>
+                  </div>
+                </div>
+
                 <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold"><i class="fas fa-paper-plane me-2"></i> <span data-i18n="submitTicket">ส่งใบแจ้งซ่อม</span></button>
               </form>
             </div>
@@ -217,6 +231,7 @@
                   
                   <p class="mb-1 text-muted small">อาการเสีย</p>
                   <p class="mb-3" id="detailIssue">-</p>
+                  <div id="detailImages" class="mb-3"></div>
                   
                   <div class="d-flex justify-content-between mb-3">
                     <div>
