@@ -14,7 +14,7 @@ function doGet(e) {
   } catch (err) {
     Logger.log("Auto-setup error on doGet: " + err.toString());
   }
-  return HtmlService.createTemplateFromFile('index')
+  return HtmlService.createTemplateFromFile('app')
       .evaluate()
       .setTitle('Maintenance Management System')
       .addMetaTag('viewport', 'width=device-width, initial-scale=1');
