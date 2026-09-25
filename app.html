@@ -14,6 +14,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- HTML5 QR Code Scanner -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
   
   <!-- Custom CSS -->
   <?!= include('css'); ?>
@@ -158,9 +160,14 @@
               <form id="createTicketForm" novalidate>
                 <div class="mb-3">
                   <label class="form-label fw-bold" data-i18n="selectMachine">เลือกเครื่องจักร (Line)</label>
-                  <select id="selMachine" class="form-select" required>
-                    <option value="" data-i18n="selectPlaceholder">-- กรุณาเลือก --</option>
-                  </select>
+                  <div class="input-group">
+                    <select id="selMachine" class="form-select" required>
+                      <option value="" data-i18n="selectPlaceholder">-- กรุณาเลือก --</option>
+                    </select>
+                    <button type="button" class="btn btn-outline-primary fw-bold" id="btnScanQR" title="Scan QR Code">
+                      <i class="fas fa-qrcode me-1"></i> <span data-i18n="btnScanQR">สแกน QR</span>
+                    </button>
+                  </div>
                   <div id="machineDetailText" class="form-text text-muted small mt-1" style="font-size: 0.75rem;">-</div>
                 </div>
                 <div class="mb-3">
@@ -419,6 +426,30 @@
           </a>
           <button type="button" class="btn btn-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">
             <i class="fas fa-times me-1"></i> <span data-i18n="btnCloseModal">ปิด (Close / 닫기)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR Scanner Modal -->
+  <div class="modal fade" id="qrScannerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+        <div class="modal-header border-0 pb-0 pt-3 px-4">
+          <h5 class="modal-title fw-bold text-primary d-flex align-items-center">
+            <i class="fas fa-qrcode me-2"></i>
+            <span data-i18n="scanQRTitle">สแกน QR Code เครื่องจักร</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="btnCloseQrModal"></button>
+        </div>
+        <div class="modal-body p-3 text-center">
+          <div id="qrReader" style="width: 100%; border-radius: 12px; overflow: hidden; background: #000; min-height: 260px;"></div>
+          <p class="text-muted small mt-3 mb-0" data-i18n="scanQRHint">ส่องกล้องไปที่ QR Code ของเครื่องจักรเพื่อเลือกอัตโนมัติ</p>
+        </div>
+        <div class="modal-footer border-0 pt-0 pb-3 px-4 justify-content-center">
+          <button type="button" class="btn btn-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal" id="btnCancelQrScan">
+            <span data-i18n="swalCancel">ยกเลิก</span>
           </button>
         </div>
       </div>

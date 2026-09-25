@@ -87,7 +87,12 @@
       spQty: "จำนวน",
       spStatus: "สถานะเริ่มต้น",
       btnSavePart: "บันทึกข้อมูล",
-      reportImageLabel: "รูปภาพจากการแจ้งซ่อม"
+      reportImageLabel: "รูปภาพจากการแจ้งซ่อม",
+      btnScanQR: "สแกน QR",
+      scanQRTitle: "สแกน QR Code เครื่องจักร",
+      scanQRHint: "ส่องกล้องไปที่ QR Code ของเครื่องจักรเพื่อเลือกอัตโนมัติ",
+      qrFoundTitle: "เลือกเครื่องจักรสำเร็จ",
+      qrNotFoundTitle: "ไม่พบข้อมูลเครื่องจักร"
     },
     en: {
       appTitle: "Maintenance System",
@@ -176,7 +181,12 @@
       spQty: "Quantity",
       spStatus: "Initial Status",
       btnSavePart: "Save Data",
-      reportImageLabel: "Report Attachment"
+      reportImageLabel: "Report Attachment",
+      btnScanQR: "Scan QR",
+      scanQRTitle: "Scan Machine QR Code",
+      scanQRHint: "Point your camera at the machine QR code to select automatically",
+      qrFoundTitle: "Machine Selected",
+      qrNotFoundTitle: "Machine Not Found"
     },
     ko: {
       appTitle: "유지보수 시스템",
@@ -265,7 +275,12 @@
       spQty: "수량",
       spStatus: "초기 상태",
       btnSavePart: "저장하기",
-      reportImageLabel: "신고 첨부 사진"
+      reportImageLabel: "신고 첨부 사진",
+      btnScanQR: "QR 스캔",
+      scanQRTitle: "기계 QR 코드 스캔",
+      scanQRHint: "기계의 QR 코드를 카메라로 비추면 자동으로 선택됩니다",
+      qrFoundTitle: "기계 선택 완료",
+      qrNotFoundTitle: "기계를 찾을 수 없습니다"
     }
   };
 
@@ -722,6 +737,7 @@
             mList.innerHTML = '<div class="col-12 text-center text-muted py-5">ไม่มีข้อมูลเครื่องจักร</div>';
           } else {
             machines.forEach(m => {
+              const statusBadge = m.status ? `<span class="badge ${m.status.toLowerCase() === 'active' ? 'bg-success' : 'bg-secondary'}">${m.status}</span>` : '';
               mList.innerHTML += `
                 <div class="col-md-6 col-lg-4 mb-4">
                   <div class="card shadow-sm border-0 rounded-4 h-100">
@@ -730,6 +746,7 @@
                         <div>
                           <h5 class="fw-bold mb-1"><i class="fas fa-industry me-2 text-primary"></i> ${m.name}</h5>
                         </div>
+                        ${statusBadge}
                       </div>
                     </div>
                   </div>
@@ -746,7 +763,8 @@
           mSelect.innerHTML = `<option value="" data-i18n="selectPlaceholder">${ph}</option>`;
           if (machines) {
             machines.forEach(m => {
-              mSelect.innerHTML += `<option value="${m.id}">${m.name}</option>`;
+              const statusSuffix = m.status ? ` (${m.status})` : '';
+              mSelect.innerHTML += `<option value="${m.id}">${m.name}${statusSuffix}</option>`;
             });
           }
         }
@@ -1255,6 +1273,127 @@
       detailEl.innerHTML = '-';
     }
   });
+
+  // --- QR Code Scanner for Machine Selection ---
+  let html5QrScanner = null;
+
+  document.getElementById('btnScanQR')?.addEventListener('click', () => {
+    const modalEl = document.getElementById('qrScannerModal');
+    if (modalEl) {
+      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modal.show();
+    }
+  });
+
+  const qrReaderModal = document.getElementById('qrScannerModal');
+  qrReaderModal?.addEventListener('shown.bs.modal', () => {
+    if (typeof Html5Qrcode === 'undefined') {
+      Swal.fire('Error', 'QR Scanner library not loaded', 'error');
+      return;
+    }
+    initCameraScanner();
+  });
+
+  qrReaderModal?.addEventListener('hidden.bs.modal', () => {
+    stopQRScanner();
+  });
+
+  function initCameraScanner() {
+    stopQRScanner().finally(() => {
+      try {
+        html5QrScanner = new Html5Qrcode("qrReader");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        
+        html5QrScanner.start(
+          { facingMode: "environment" },
+          config,
+          (decodedText) => {
+            onQRCodeScanned(decodedText);
+          },
+          (errorMessage) => {
+            // Frame parse error - ignore continuous detection noise
+          }
+        ).catch(err => {
+          console.error("Camera start error:", err);
+          Swal.fire({
+            icon: 'error',
+            title: 'Camera Error',
+            text: 'ไม่สามารถเปิดกล้องได้ กรุณาตรวจสอบสิทธิ์การเข้าถึงกล้อง / Cannot access camera.'
+          });
+          const modalEl = document.getElementById('qrScannerModal');
+          if (modalEl) {
+            bootstrap.Modal.getInstance(modalEl)?.hide();
+          }
+        });
+      } catch (err) {
+        console.error("Scanner init error:", err);
+      }
+    });
+  }
+
+  function stopQRScanner() {
+    return new Promise((resolve) => {
+      if (html5QrScanner) {
+        const scannerInstance = html5QrScanner;
+        html5QrScanner = null;
+        scannerInstance.stop().then(() => {
+          try { scannerInstance.clear(); } catch(e){}
+          resolve();
+        }).catch(err => {
+          console.warn("Stop scanner error:", err);
+          try { scannerInstance.clear(); } catch(e){}
+          resolve();
+        });
+      } else {
+        resolve();
+      }
+    });
+  }
+
+  function onQRCodeScanned(rawCode) {
+    if (!rawCode) return;
+    const cleanCode = rawCode.trim();
+
+    // Stop scanner and close modal immediately
+    stopQRScanner();
+    const modalEl = document.getElementById('qrScannerModal');
+    if (modalEl) {
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+    }
+
+    // Match machine by:
+    // 1. QR code column value (m.qr)
+    // 2. Machine ID / Name (m.id, m.name)
+    const target = cleanCode.toLowerCase();
+    const matchedMachine = allMachines.find(m => {
+      const mQr = m.qr ? String(m.qr).trim().toLowerCase() : '';
+      const mId = m.id ? String(m.id).trim().toLowerCase() : '';
+      const mName = m.name ? String(m.name).trim().toLowerCase() : '';
+      return (mQr && mQr === target) || (mId && mId === target) || (mName && mName === target);
+    });
+
+    if (matchedMachine) {
+      const selMachine = document.getElementById('selMachine');
+      if (selMachine) {
+        selMachine.value = matchedMachine.id;
+        selMachine.dispatchEvent(new Event('change'));
+      }
+      Swal.fire({
+        icon: 'success',
+        title: (i18n[currentLang] && i18n[currentLang].qrFoundTitle) || 'เลือกเครื่องจักรสำเร็จ',
+        text: `${matchedMachine.name} ${matchedMachine.status ? '(' + matchedMachine.status + ')' : ''}`,
+        timer: 1800,
+        showConfirmButton: false
+      });
+    } else {
+      Swal.fire({
+        icon: 'warning',
+        title: (i18n[currentLang] && i18n[currentLang].qrNotFoundTitle) || 'ไม่พบข้อมูลเครื่องจักร',
+        text: cleanCode
+      });
+    }
+  }
 
   window.openImageModal = openImageModal;
 </script>

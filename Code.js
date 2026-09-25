@@ -382,8 +382,11 @@ function getMachines() {
   if (data.length < 2) return [];
   
   var headers = data[0];
+  var qrIdx = headers.indexOf("QR");
+  if (qrIdx === -1) qrIdx = 0; // Default to column A (index 0)
+  
   var lineIndex = headers.indexOf("Line");
-  if (lineIndex === -1) lineIndex = 2; // Default to index 2
+  if (lineIndex === -1) lineIndex = 2; // Default to column C (index 2)
   
   var vendorIdx = headers.indexOf("Vender");
   if (vendorIdx === -1) vendorIdx = headers.indexOf("Vendor"); // Fallback
@@ -393,6 +396,8 @@ function getMachines() {
   var mfgDateIdx = headers.indexOf("MFG.Date");
   var powerSupplyIdx = headers.indexOf("Power Supply");
   var optionIdx = headers.indexOf("Option");
+  var statusIdx = headers.indexOf("Status");
+  if (statusIdx === -1 && headers.length > 16) statusIdx = 16; // Default to column Q (index 16)
   
   for (var i = 1; i < data.length; i++) {
     if (data[i][lineIndex]) {
@@ -401,16 +406,22 @@ function getMachines() {
          mfgDate = Utilities.formatDate(mfgDate, "Asia/Bangkok", "dd/MM/yyyy");
       }
       
+      var qrVal = qrIdx > -1 && data[i][qrIdx] !== undefined ? String(data[i][qrIdx]).trim() : "";
+      var statusVal = statusIdx > -1 && data[i][statusIdx] !== undefined ? String(data[i][statusIdx]).trim() : "";
+
       machines.push({
-        id: data[i][lineIndex],
-        name: data[i][lineIndex],
+        id: String(data[i][lineIndex]).trim(),
+        name: String(data[i][lineIndex]).trim(),
+        qr: qrVal,
+        status: statusVal,
         details: {
           vendor: vendorIdx > -1 ? data[i][vendorIdx] : "",
           mcModel: mcModelIdx > -1 ? data[i][mcModelIdx] : "",
           serNo: serNoIdx > -1 ? data[i][serNoIdx] : "",
           mfgDate: mfgDate,
           powerSupply: powerSupplyIdx > -1 ? data[i][powerSupplyIdx] : "",
-          option: optionIdx > -1 ? data[i][optionIdx] : ""
+          option: optionIdx > -1 ? data[i][optionIdx] : "",
+          status: statusVal
         }
       });
     }
