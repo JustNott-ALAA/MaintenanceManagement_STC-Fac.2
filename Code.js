@@ -383,22 +383,42 @@ function getMachines() {
   if (data.length < 2) return [];
   
   var headers = data[0];
-  var qrIdx = headers.indexOf("QR");
-  if (qrIdx === -1) qrIdx = 0; // Default to column A (index 0)
   
-  var lineIndex = headers.indexOf("Line");
-  if (lineIndex === -1) lineIndex = 2; // Default to column C (index 2)
-  
-  var vendorIdx = headers.indexOf("Vender");
-  if (vendorIdx === -1) vendorIdx = headers.indexOf("Vendor"); // Fallback
-  
-  var mcModelIdx = headers.indexOf("M/C Model");
-  var serNoIdx = headers.indexOf("Ser.No.");
-  var mfgDateIdx = headers.indexOf("MFG.Date");
-  var powerSupplyIdx = headers.indexOf("Power Supply");
-  var optionIdx = headers.indexOf("Option");
-  var statusIdx = headers.indexOf("Status");
-  if (statusIdx === -1 && headers.length > 16) statusIdx = 16; // Default to column Q (index 16)
+  // Find column indexes robustly (case-insensitive & symbol-stripped)
+  var qrIdx = -1;
+  var lineIndex = -1;
+  var vendorIdx = -1;
+  var mcModelIdx = -1;
+  var serNoIdx = -1;
+  var mfgDateIdx = -1;
+  var powerSupplyIdx = -1;
+  var optionIdx = -1;
+  var statusIdx = -1;
+
+  for (var h = 0; h < headers.length; h++) {
+    var rawH = String(headers[h] || '').trim().toLowerCase();
+    var cleanH = rawH.replace(/[\s\.\_\-\/]/g, '');
+
+    if (qrIdx === -1 && (cleanH === 'qr' || cleanH === 'qrcode')) qrIdx = h;
+    if (lineIndex === -1 && (cleanH === 'line' || cleanH === 'machine' || cleanH === 'machineid' || cleanH === 'machinename')) lineIndex = h;
+    if (vendorIdx === -1 && (cleanH === 'vendor' || cleanH === 'vender')) vendorIdx = h;
+    if (mcModelIdx === -1 && (cleanH === 'mcmodel' || cleanH === 'model')) mcModelIdx = h;
+    if (serNoIdx === -1 && (cleanH === 'serno' || cleanH === 'serialno' || cleanH === 'serialnumber' || cleanH === 'sn')) serNoIdx = h;
+    if (mfgDateIdx === -1 && (cleanH === 'mfgdate' || cleanH === 'mfg')) mfgDateIdx = h;
+    if (powerSupplyIdx === -1 && (cleanH === 'powersupply' || cleanH === 'power')) powerSupplyIdx = h;
+    if (optionIdx === -1 && cleanH === 'option') optionIdx = h;
+    if (statusIdx === -1 && (cleanH === 'status' || cleanH === 'สถานะ')) statusIdx = h;
+  }
+
+  // Fallbacks by standard column positions:
+  // Column A = 0 (QR)
+  // Column C = 2 (Line)
+  // Column G = 6 (Ser.No.)
+  // Column Q = 16 (Status)
+  if (qrIdx === -1) qrIdx = 0;
+  if (lineIndex === -1 && headers.length > 2) lineIndex = 2;
+  if (serNoIdx === -1 && headers.length > 6) serNoIdx = 6;
+  if (statusIdx === -1 && headers.length > 16) statusIdx = 16;
   
   for (var i = 1; i < data.length; i++) {
     if (data[i][lineIndex]) {

@@ -450,7 +450,8 @@
         <div class="modal-body p-3 text-center">
           <div id="qrScannerWrapper" style="position: relative; width: 100%; max-width: 320px; height: 300px; margin: 0 auto; border-radius: 16px; overflow: hidden; background: #000;">
             <!-- Live Video Stream Target -->
-            <div id="qrReader" style="width: 100%; height: 100%;"></div>
+            <video id="qrLiveVideo" playsinline autoplay muted style="width: 100%; height: 100%; object-fit: cover; display: block;"></video>
+            <div id="qrReader" style="display: none;"></div>
             
             <!-- Viewfinder Overlay Box & Animated Laser Line -->
             <div id="qrViewfinderOverlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; display: flex; align-items: center; justify-content: center;">

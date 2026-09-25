@@ -1281,8 +1281,10 @@
   });
 
   // --- Live QR Code Scanner & Image Fallback for Machine Selection ---
-  let html5QrScanner = null;
+  let mediaStream = null;
+  let scanAnimFrame = null;
   let qrModalInstance = null;
+  let isDecodingFrame = false;
 
   function getQrModal() {
     const el = document.getElementById('qrScannerModal');
@@ -1297,6 +1299,19 @@
   }
 
   document.getElementById('btnScanQR')?.addEventListener('click', () => {
+    // Check if opened inside LINE in-app browser
+    const isLine = /Line\//i.test(navigator.userAgent);
+    if (isLine) {
+      // LINE in-app browser blocks getUserMedia live video streams
+      // Open camera capture immediately for the smoothest experience
+      const input = document.getElementById('qrCameraInput');
+      if (input) {
+        input.value = '';
+        input.click();
+      }
+      return;
+    }
+
     const modal = getQrModal();
     if (modal) modal.show();
     startLiveScanner();
@@ -1326,87 +1341,160 @@
   });
 
   async function startLiveScanner() {
+    const video = document.getElementById('qrLiveVideo');
     const statusMsg = document.getElementById('qrScanStatusMsg');
-    if (statusMsg) statusMsg.textContent = 'กำลังเปิดกล้อง...';
+    if (statusMsg) statusMsg.innerHTML = '<span class="text-info"><i class="fas fa-spinner fa-spin me-1"></i> กำลังเปิดกล้อง...</span>';
 
-    await stopLiveScanner();
+    stopLiveScanner();
 
-    const qrReaderEl = document.getElementById('qrReader');
-    if (qrReaderEl) qrReaderEl.innerHTML = '';
+    // Standard constraints - no restrictive exact ratios so all phone cameras accept it
+    const constraintsList = [
+      { audio: false, video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 } } },
+      { audio: false, video: { facingMode: "environment" } },
+      { audio: false, video: true }
+    ];
 
-    const onScanSuccess = (decodedText) => {
-      if (!decodedText) return;
-      if (navigator.vibrate) {
-        try { navigator.vibrate(80); } catch(e) {}
+    let stream = null;
+    let lastErr = null;
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      if (statusMsg) {
+        statusMsg.innerHTML = '<span class="text-danger small">เบราว์เซอร์ไม่รองรับกล้องสด กรุณากดปุ่ม <b>"เลือกรูปแทน"</b></span>';
       }
-      stopLiveScanner();
-      const modal = getQrModal();
-      if (modal) modal.hide();
-      onQRCodeScanned(decodedText);
-    };
+      return;
+    }
 
-    try {
-      if (typeof Html5Qrcode === 'undefined') {
-        throw new Error("Html5Qrcode library not loaded");
-      }
-      html5QrScanner = new Html5Qrcode("qrReader");
-      const config = {
-        fps: 20,
-        qrbox: (viewfinderWidth, viewfinderHeight) => {
-          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-          const qrEdge = Math.max(Math.floor(minEdge * 0.75), 180);
-          return { width: qrEdge, height: qrEdge };
-        },
-        aspectRatio: 1.0,
-        experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true
-        }
-      };
-
-      await html5QrScanner.start(
-        { facingMode: "environment" },
-        config,
-        onScanSuccess,
-        () => {} // Frame error ignore
-      );
-      if (statusMsg) statusMsg.textContent = '';
-    } catch (err) {
-      console.warn("Direct back camera start failed, attempting getCameras:", err);
+    for (let c of constraintsList) {
       try {
-        const devices = await Html5Qrcode.getCameras();
-        if (devices && devices.length > 0) {
-          let chosenCam = devices.find(d => /back|rear|environment/i.test(d.label)) || devices[devices.length - 1];
-          await html5QrScanner.start(
-            chosenCam.id,
-            { fps: 20, qrbox: { width: 210, height: 210 }, aspectRatio: 1.0 },
-            onScanSuccess,
-            () => {}
-          );
-          if (statusMsg) statusMsg.textContent = '';
+        stream = await navigator.mediaDevices.getUserMedia(c);
+        if (stream) break;
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+
+    if (!stream) {
+      console.warn("Camera access failed:", lastErr);
+      if (statusMsg) {
+        const isLine = /Line\//i.test(navigator.userAgent);
+        if (isLine) {
+          statusMsg.innerHTML = '<span class="text-warning small">แอป LINE ไม่อนุญาตให้เปิดกล้องสด กรุณากด <b>"เลือกรูปแทน"</b> หรือเปิดใน Chrome</span>';
         } else {
-          throw new Error("No camera devices detected");
-        }
-      } catch (fallbackErr) {
-        console.error("Camera scanner failed:", fallbackErr);
-        if (statusMsg) {
-          statusMsg.innerHTML = '<span class="text-danger small">ไม่สามารถเปิดกล้องสดได้ กรุณากด "เลือกรูปแทน"</span>';
+          statusMsg.innerHTML = `<span class="text-danger small">ไม่สามารถเปิดกล้องได้ (${lastErr ? lastErr.name : 'Denied'})<br>กรุณากดปุ่ม <b>"เลือกรูปแทน"</b> หรืออนุญาตสิทธิ์กล้อง</span>`;
         }
       }
+      return;
+    }
+
+    mediaStream = stream;
+    if (video) {
+      video.srcObject = stream;
+      video.setAttribute('playsinline', 'true');
+      video.setAttribute('autoplay', 'true');
+      video.setAttribute('muted', 'true');
+      try {
+        await video.play();
+      } catch (e) {
+        console.warn("Video play error:", e);
+      }
+    }
+
+    if (statusMsg) statusMsg.innerHTML = '';
+    
+    // Start scanning frames continuously
+    scanVideoLoop();
+  }
+
+  function stopLiveScanner() {
+    if (scanAnimFrame) {
+      cancelAnimationFrame(scanAnimFrame);
+      scanAnimFrame = null;
+    }
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(track => track.stop());
+      mediaStream = null;
+    }
+    const video = document.getElementById('qrLiveVideo');
+    if (video) {
+      video.pause();
+      video.srcObject = null;
     }
   }
 
-  async function stopLiveScanner() {
-    if (html5QrScanner) {
+  async function scanVideoLoop() {
+    const video = document.getElementById('qrLiveVideo');
+    if (!video || !mediaStream || video.paused || video.ended) return;
+
+    if (!isDecodingFrame && video.readyState >= 2 && video.videoWidth > 0) {
+      isDecodingFrame = true;
       try {
-        if (html5QrScanner.isScanning) {
-          await html5QrScanner.stop();
+        let code = await decodeFrame(video);
+        if (code) {
+          handleLiveScanSuccess(code);
+          return;
         }
-        await html5QrScanner.clear();
       } catch (e) {
-        console.warn("stopLiveScanner error:", e);
+      } finally {
+        isDecodingFrame = false;
       }
-      html5QrScanner = null;
     }
+
+    scanAnimFrame = requestAnimationFrame(scanVideoLoop);
+  }
+
+  async function decodeFrame(video) {
+    // 1. Native BarcodeDetector (Fastest & natively built into Android Chrome)
+    if ('BarcodeDetector' in window) {
+      try {
+        if (!window._bdDetector) {
+          window._bdDetector = new BarcodeDetector({ formats: ['qr_code'] });
+        }
+        const barcodes = await window._bdDetector.detect(video);
+        if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+          return barcodes[0].rawValue;
+        }
+      } catch (e) {}
+    }
+
+    // 2. jsQR on cropped center square of video
+    if (typeof jsQR !== 'undefined') {
+      try {
+        if (!window._scanCanvas) {
+          window._scanCanvas = document.createElement('canvas');
+          window._scanCtx = window._scanCanvas.getContext('2d', { willReadFrequently: true });
+        }
+        const canvas = window._scanCanvas;
+        const ctx = window._scanCtx;
+
+        const vW = video.videoWidth;
+        const vH = video.videoHeight;
+        const cropSize = Math.floor(Math.min(vW, vH) * 0.75);
+        const startX = Math.floor((vW - cropSize) / 2);
+        const startY = Math.floor((vH - cropSize) / 2);
+
+        canvas.width = 300;
+        canvas.height = 300;
+        ctx.drawImage(video, startX, startY, cropSize, cropSize, 0, 0, 300, 300);
+
+        const imgData = ctx.getImageData(0, 0, 300, 300);
+        const qr = jsQR(imgData.data, 300, 300, { inversionAttempts: "attemptBoth" });
+        if (qr && qr.data) {
+          return qr.data;
+        }
+      } catch (e) {}
+    }
+
+    return null;
+  }
+
+  function handleLiveScanSuccess(decodedText) {
+    if (navigator.vibrate) {
+      try { navigator.vibrate(80); } catch(e) {}
+    }
+    stopLiveScanner();
+    const modal = getQrModal();
+    if (modal) modal.hide();
+    onQRCodeScanned(decodedText);
   }
 
   document.getElementById('qrCameraInput')?.addEventListener('change', async (e) => {
@@ -1552,28 +1640,32 @@
 
   function onQRCodeScanned(rawCode) {
     if (!rawCode) return;
-    const cleanCode = rawCode.trim();
+    const cleanCode = String(rawCode).trim();
     const target = cleanCode.toLowerCase();
+    const targetAlnum = target.replace(/[^a-z0-9]/g, '');
 
     // 1. Prioritize Ser.No. (Column G) as requested by user
     // 2. Secondary check QR column (Column A)
     // 3. Fallback check Line ID / Machine Name (Column C)
     const matchedMachine = allMachines.find(m => {
-      const mSerNo = (m.serNo || (m.details && m.details.serNo)) ? String(m.serNo || m.details.serNo).trim().toLowerCase() : '';
-      const mQr = m.qr ? String(m.qr).trim().toLowerCase() : '';
-      const mId = m.id ? String(m.id).trim().toLowerCase() : '';
-      const mName = m.name ? String(m.name).trim().toLowerCase() : '';
+      const mSerNo = String(m.serNo || (m.details && m.details.serNo) || '').trim().toLowerCase();
+      const mSerNoAlnum = mSerNo.replace(/[^a-z0-9]/g, '');
+      const mQr = String(m.qr || '').trim().toLowerCase();
+      const mId = String(m.id || '').trim().toLowerCase();
+      const mName = String(m.name || '').trim().toLowerCase();
 
-      // Match by Ser.No. (exact or contained)
-      if (mSerNo && (mSerNo === target || target.includes(mSerNo) || mSerNo.includes(target))) {
-        return true;
+      // Match by Ser.No. (exact, contains, or alphanumeric match)
+      if (mSerNo) {
+        if (mSerNo === target) return true;
+        if (target.includes(mSerNo) || mSerNo.includes(target)) return true;
+        if (mSerNoAlnum && targetAlnum && (targetAlnum === mSerNoAlnum || targetAlnum.includes(mSerNoAlnum) || mSerNoAlnum.includes(targetAlnum))) return true;
       }
       // Match by QR column
-      if (mQr && (mQr === target || target.includes(mQr))) {
+      if (mQr && (mQr === target || target.includes(mQr) || mQr.includes(target))) {
         return true;
       }
       // Match by Line ID / Machine Name
-      if ((mId && mId === target) || (mName && mName === target)) {
+      if ((mId && (mId === target || target.includes(mId))) || (mName && (mName === target || target.includes(mName)))) {
         return true;
       }
       return false;
@@ -1603,11 +1695,19 @@
         icon: 'warning',
         title: (i18n[currentLang] && i18n[currentLang].qrNotFoundTitle) || 'ไม่พบข้อมูลเครื่องจักร',
         html: `
-          <div class="text-muted">${(i18n[currentLang] && i18n[currentLang].qrNotFoundDesc) || 'ไม่พบเครื่องจักรที่ตรงกับ QR Code / Ser.No.'}</div>
-          <div class="badge bg-light text-dark border mt-2 p-2 fs-6 text-wrap">${cleanCode}</div>
+          <div class="text-muted mb-2">${(i18n[currentLang] && i18n[currentLang].qrNotFoundDesc) || 'ไม่พบเครื่องจักรที่ตรงกับ QR Code / Ser.No.'}</div>
+          <div class="p-3 bg-light border rounded-3 text-start small font-monospace">
+            <span class="text-muted">ค่าที่สแกนได้:</span><br>
+            <b class="text-danger text-break fs-6">${escapeHtml(cleanCode)}</b>
+          </div>
         `
       });
     }
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   window.openImageModal = openImageModal;
