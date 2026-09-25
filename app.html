@@ -37,7 +37,7 @@
       <div class="text-center mb-4">
         <i class="fas fa-tools fa-3x text-primary mb-3"></i>
         <h4 class="fw-bold mb-1" data-i18n="appTitle">Maintenance System</h4>
-        <span class="badge bg-primary-subtle text-primary border rounded-pill px-2 font-monospace" style="font-size: 0.7rem;">v46</span>
+        <span class="badge bg-primary-subtle text-primary border rounded-pill px-2 font-monospace" style="font-size: 0.7rem;">v47</span>
       </div>
 
       <!-- Language Switcher Login -->
@@ -136,7 +136,7 @@
         </button>
         <div class="d-flex align-items-center">
           <span class="navbar-brand mb-0 h1 fw-bold text-primary me-2" data-i18n="appTitleShort">MMS Fac2</span>
-          <span class="badge bg-primary-subtle text-primary border rounded-pill px-2 py-1 font-monospace" style="font-size: 0.65rem;">v46</span>
+          <span class="badge bg-primary-subtle text-primary border rounded-pill px-2 py-1 font-monospace" style="font-size: 0.65rem;">v47</span>
         </div>
         <div class="ms-auto d-flex align-items-center">
           <i class="fas fa-globe text-primary me-2"></i>
@@ -174,8 +174,10 @@
                       <i class="fas fa-qrcode me-1"></i> <span data-i18n="btnScanQR">สแกน QR Code</span>
                     </button>
                   </div>
-                  <!-- Camera capture input for mobile/LINE -->
+                  <!-- Camera capture input for mobile -->
                   <input type="file" id="qrCameraInput" accept="image/*" capture="environment" class="d-none">
+                  <!-- Gallery picker input for mobile -->
+                  <input type="file" id="qrGalleryInput" accept="image/*" class="d-none">
                   <div id="machineDetailText" class="form-text text-muted small mt-1" style="font-size: 0.75rem;">-</div>
                 </div>
                 <div class="mb-3">
@@ -474,9 +476,12 @@
           </p>
           <div id="qrScanStatusMsg" class="small mt-1" style="min-height: 24px;"></div>
           
-          <div class="mt-2">
-            <button type="button" class="btn btn-warning rounded-pill px-4 fw-bold shadow-sm" id="btnSnapInsideModal">
-              <i class="fas fa-camera me-2"></i> <span data-i18n="btnSnapPhoto">ถ่ายรูปสแกน QR / เลือกรูป</span>
+          <div class="d-flex gap-2 justify-content-center mt-3">
+            <button type="button" class="btn btn-warning rounded-pill px-3 py-2 fw-bold shadow-sm flex-fill" id="btnSnapInsideModal">
+              <i class="fas fa-camera me-1"></i> <span data-i18n="btnSnapPhoto">ถ่ายรูป QR</span>
+            </button>
+            <button type="button" class="btn btn-outline-light rounded-pill px-3 py-2 fw-bold shadow-sm flex-fill" id="btnPickGallery">
+              <i class="fas fa-image me-1"></i> <span data-i18n="btnPickGallery">เลือกจากคลังรูป</span>
             </button>
           </div>
         </div>

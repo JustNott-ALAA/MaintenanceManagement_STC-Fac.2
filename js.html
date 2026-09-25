@@ -92,6 +92,8 @@
       scanQRTitle: "สแกน QR Code เครื่องจักร",
       scanQRHint: "เล็งกรอบให้ตรงกับ QR Code ของเครื่องจักร",
       btnUploadQR: "เลือกรูปแทน",
+      btnSnapPhoto: "ถ่ายรูป QR",
+      btnPickGallery: "เลือกจากคลังรูป",
       qrFoundTitle: "เลือกเครื่องจักรสำเร็จ",
       qrNotFoundTitle: "ไม่พบข้อมูลเครื่องจักร",
       qrNotFoundDesc: "ไม่พบเครื่องจักรที่ตรงกับ QR Code / Ser.No. ที่สแกนได้"
@@ -188,6 +190,8 @@
       scanQRTitle: "Scan Machine QR Code",
       scanQRHint: "Align the frame with the machine QR Code",
       btnUploadQR: "Choose Photo",
+      btnSnapPhoto: "Take QR Photo",
+      btnPickGallery: "Choose from Album",
       qrFoundTitle: "Machine Selected",
       qrNotFoundTitle: "Machine Not Found",
       qrNotFoundDesc: "Could not find a machine matching the scanned QR Code / Ser.No."
@@ -284,6 +288,8 @@
       scanQRTitle: "기계 QR 코드 스캔",
       scanQRHint: "프레임을 기계의 QR 코드에 맞추세요",
       btnUploadQR: "사진 선택",
+      btnSnapPhoto: "QR 사진 촬영",
+      btnPickGallery: "앨범에서 선택",
       qrFoundTitle: "기계 선택 완료",
       qrNotFoundTitle: "기계 정보를 찾을 수 없습니다",
       qrNotFoundDesc: "스캔된 QR 코드 / 일련번호와 일치하는 기계를 찾을 수 없습니다."
@@ -1299,19 +1305,7 @@
   }
 
   document.getElementById('btnScanQR')?.addEventListener('click', () => {
-    // Check if opened inside LINE in-app browser
-    const isLine = /Line\//i.test(navigator.userAgent);
-    if (isLine) {
-      // In LINE: Open native camera immediately for fast 1-click scanning
-      const input = document.getElementById('qrCameraInput');
-      if (input) {
-        input.value = '';
-        input.click();
-      }
-      return;
-    }
-
-    // In Chrome / external browser: Open live viewfinder modal
+    // Open live viewfinder modal for everyone (both LINE & Chrome)
     const modal = getQrModal();
     if (modal) modal.show();
     startLiveScanner();
@@ -1329,6 +1323,7 @@
     stopLiveScanner();
   });
 
+  // Button 1: Force Camera capture
   document.getElementById('btnSnapInsideModal')?.addEventListener('click', () => {
     stopLiveScanner();
     const modal = getQrModal();
@@ -1340,11 +1335,12 @@
     }
   });
 
-  document.getElementById('btnSwitchToUpload')?.addEventListener('click', () => {
+  // Button 2: Choose from Album / Gallery
+  document.getElementById('btnPickGallery')?.addEventListener('click', () => {
     stopLiveScanner();
     const modal = getQrModal();
     if (modal) modal.hide();
-    const input = document.getElementById('qrCameraInput');
+    const input = document.getElementById('qrGalleryInput');
     if (input) {
       input.value = '';
       input.click();
@@ -1388,10 +1384,13 @@
       console.warn("Camera access failed:", lastErr);
       if (statusMsg) {
         const isLine = /Line\//i.test(navigator.userAgent);
-        if (isLine) {
-          statusMsg.innerHTML = '<span class="text-warning small">แอป LINE ไม่อนุญาตให้เปิดกล้องสด กรุณากด <b>"เลือกรูปแทน"</b> หรือเปิดใน Chrome</span>';
+        const errName = lastErr ? lastErr.name : '';
+        if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
+          statusMsg.innerHTML = '<span class="text-danger small"><i class="fas fa-lock me-1"></i> <b>สิทธิ์กล้องถูกปิดอยู่ (NotAllowedError)</b><br>แตะไอคอนตั้งค่าข้าง URL ด้านบน เพื่อ "อนุญาตสิทธิ์กล้อง"<br>หรือกดปุ่ม <b>"ถ่ายรูป QR"</b> ด้านล่าง</span>';
+        } else if (isLine) {
+          statusMsg.innerHTML = '<span class="text-warning small"><i class="fas fa-info-circle me-1"></i> แอป LINE ไม่รองรับการเปิดกล้องสด<br>กรุณากดปุ่ม <b>"ถ่ายรูป QR"</b> ด้านล่าง</span>';
         } else {
-          statusMsg.innerHTML = `<span class="text-danger small">ไม่สามารถเปิดกล้องได้ (${lastErr ? lastErr.name : 'Denied'})<br>กรุณากดปุ่ม <b>"เลือกรูปแทน"</b> หรืออนุญาตสิทธิ์กล้อง</span>`;
+          statusMsg.innerHTML = `<span class="text-danger small">ไม่สามารถเปิดกล้องสดได้ (${errName || 'Denied'})<br>กรุณากดปุ่ม <b>"ถ่ายรูป QR"</b> ด้านล่าง</span>`;
         }
       }
       return;
@@ -1509,6 +1508,30 @@
   }
 
   document.getElementById('qrCameraInput')?.addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    showLoading();
+    try {
+      const decodedText = await decodeQRFromImage(file);
+      hideLoading();
+      if (decodedText) {
+        onQRCodeScanned(decodedText);
+      }
+    } catch (err) {
+      hideLoading();
+      console.warn("Decode QR failed:", err);
+      Swal.fire({
+        icon: 'warning',
+        title: (i18n[currentLang] && i18n[currentLang].qrNotFoundTitle) || 'ไม่พบ QR Code',
+        text: (i18n[currentLang] && i18n[currentLang].qrNotFoundDesc) || 'กรุณาลองใหม่อีกครั้งให้ใกล้และชัดเจนขึ้น'
+      });
+    } finally {
+      e.target.value = '';
+    }
+  });
+
+  document.getElementById('qrGalleryInput')?.addEventListener('change', async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
 
