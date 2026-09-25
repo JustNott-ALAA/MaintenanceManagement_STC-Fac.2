@@ -468,13 +468,16 @@
           <p class="text-white-50 small mt-3 mb-1" data-i18n="scanQRHint">
             <i class="fas fa-bullseye text-warning me-1"></i> เล็งกรอบให้ตรงกับ QR Code ของเครื่องจักร
           </p>
-          <div id="qrScanStatusMsg" class="small text-info mt-1" style="min-height: 20px;"></div>
+          <div id="qrScanStatusMsg" class="small mt-1" style="min-height: 24px;"></div>
+          
+          <div class="mt-2">
+            <button type="button" class="btn btn-warning rounded-pill px-4 fw-bold shadow-sm" id="btnSnapInsideModal">
+              <i class="fas fa-camera me-2"></i> <span data-i18n="btnSnapPhoto">ถ่ายรูปสแกน QR / เลือกรูป</span>
+            </button>
+          </div>
         </div>
-        <div class="modal-footer border-0 pt-0 pb-3 px-4 d-flex justify-content-between">
-          <button type="button" class="btn btn-outline-light btn-sm rounded-pill px-3" id="btnSwitchToUpload">
-            <i class="fas fa-image me-1"></i> <span data-i18n="btnUploadQR">เลือกรูปแทน</span>
-          </button>
-          <button type="button" class="btn btn-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal" id="btnCancelQrScan">
+        <div class="modal-footer border-0 pt-0 pb-3 px-4 justify-content-center">
+          <button type="button" class="btn btn-outline-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal" id="btnCancelQrScan">
             <span data-i18n="swalCancel">ยกเลิก</span>
           </button>
         </div>

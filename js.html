@@ -1299,19 +1299,6 @@
   }
 
   document.getElementById('btnScanQR')?.addEventListener('click', () => {
-    // Check if opened inside LINE in-app browser
-    const isLine = /Line\//i.test(navigator.userAgent);
-    if (isLine) {
-      // LINE in-app browser blocks getUserMedia live video streams
-      // Open camera capture immediately for the smoothest experience
-      const input = document.getElementById('qrCameraInput');
-      if (input) {
-        input.value = '';
-        input.click();
-      }
-      return;
-    }
-
     const modal = getQrModal();
     if (modal) modal.show();
     startLiveScanner();
@@ -1327,6 +1314,17 @@
 
   document.getElementById('btnCancelQrScan')?.addEventListener('click', () => {
     stopLiveScanner();
+  });
+
+  document.getElementById('btnSnapInsideModal')?.addEventListener('click', () => {
+    stopLiveScanner();
+    const modal = getQrModal();
+    if (modal) modal.hide();
+    const input = document.getElementById('qrCameraInput');
+    if (input) {
+      input.value = '';
+      input.click();
+    }
   });
 
   document.getElementById('btnSwitchToUpload')?.addEventListener('click', () => {
@@ -1638,9 +1636,27 @@
     });
   }
 
-  function onQRCodeScanned(rawCode) {
+  async function onQRCodeScanned(rawCode) {
     if (!rawCode) return;
     const cleanCode = String(rawCode).trim();
+    if (!cleanCode) return;
+
+    // Safety: Ensure allMachines is loaded
+    if (!allMachines || allMachines.length === 0) {
+      showLoading();
+      try {
+        allMachines = await new Promise((resolve) => {
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(() => resolve([]))
+            .getMachines();
+        }) || [];
+      } catch (e) {
+      } finally {
+        hideLoading();
+      }
+    }
+
     const target = cleanCode.toLowerCase();
     const targetAlnum = target.replace(/[^a-z0-9]/g, '');
 
@@ -1653,6 +1669,8 @@
       const mQr = String(m.qr || '').trim().toLowerCase();
       const mId = String(m.id || '').trim().toLowerCase();
       const mName = String(m.name || '').trim().toLowerCase();
+      const mNameAlnum = mName.replace(/[^a-z0-9]/g, '');
+      const mModel = String((m.details && m.details.mcModel) || '').trim().toLowerCase();
 
       // Match by Ser.No. (exact, contains, or alphanumeric match)
       if (mSerNo) {
@@ -1668,6 +1686,13 @@
       if ((mId && (mId === target || target.includes(mId))) || (mName && (mName === target || target.includes(mName)))) {
         return true;
       }
+      if (mNameAlnum && targetAlnum && (mNameAlnum === targetAlnum || targetAlnum.includes(mNameAlnum) || mNameAlnum.includes(targetAlnum))) {
+        return true;
+      }
+      // Match by M/C Model
+      if (mModel && (mModel === target || target.includes(mModel))) {
+        return true;
+      }
       return false;
     });
 
@@ -1675,6 +1700,16 @@
       const selMachine = document.getElementById('selMachine');
       if (selMachine) {
         selMachine.value = matchedMachine.id;
+        if (!selMachine.value) {
+          for (let opt of selMachine.options) {
+            if (opt.value.toLowerCase() === matchedMachine.id.toLowerCase() ||
+                opt.text.toLowerCase().includes(matchedMachine.name.toLowerCase()) ||
+                opt.text.toLowerCase().includes(matchedMachine.id.toLowerCase())) {
+              selMachine.value = opt.value;
+              break;
+            }
+          }
+        }
         selMachine.dispatchEvent(new Event('change'));
       }
       const serNoVal = matchedMachine.serNo || (matchedMachine.details && matchedMachine.details.serNo) || '-';
