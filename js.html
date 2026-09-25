@@ -1309,67 +1309,106 @@
       const reader = new FileReader();
       reader.onload = (e) => {
         const img = new Image();
-        img.onload = () => {
-          // 1. Scaled canvas (max 1200px) for speed and high resolution handling
-          const maxDim = 1200;
-          let w = img.width;
-          let h = img.height;
-          if (w > maxDim || h > maxDim) {
-            if (w > h) {
-              h = Math.round((h * maxDim) / w);
-              w = maxDim;
-            } else {
-              w = Math.round((w * maxDim) / h);
-              h = maxDim;
-            }
-          }
-
-          const canvas = document.createElement('canvas');
-          canvas.width = w;
-          canvas.height = h;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, w, h);
-
-          // Fast decode with jsQR
-          if (typeof jsQR !== 'undefined') {
+        img.onload = async () => {
+          // --- Method 1: Native BarcodeDetector (Fastest & most accurate on Android) ---
+          if ('BarcodeDetector' in window) {
             try {
-              let imgData = ctx.getImageData(0, 0, w, h);
-              let code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: "dontInvert" });
-              if (code && code.data) return resolve(code.data);
-
-              code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: "attemptBoth" });
-              if (code && code.data) return resolve(code.data);
-            } catch (errJsQR) {
-              console.warn("jsQR scaled attempt error:", errJsQR);
+              const detector = new BarcodeDetector({ formats: ['qr_code'] });
+              const barcodes = await detector.detect(img);
+              if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+                return resolve(barcodes[0].rawValue);
+              }
+            } catch (errBD) {
+              console.warn("BarcodeDetector error:", errBD);
             }
           }
 
-          // Fallback to Html5Qrcode.scanFile if jsQR didn't catch it
+          // --- Method 2: ZXing BrowserQRCodeReader & MultiFormatReader ---
+          if (typeof ZXing !== 'undefined') {
+            try {
+              const zxingQR = new ZXing.BrowserQRCodeReader();
+              const resQR = await zxingQR.decodeFromImageElement(img);
+              if (resQR && resQR.getText()) {
+                return resolve(resQR.getText());
+              }
+            } catch (errZX1) {}
+
+            try {
+              const zxingMulti = new ZXing.BrowserMultiFormatReader();
+              const resMulti = await zxingMulti.decodeFromImageElement(img);
+              if (resMulti && resMulti.getText()) {
+                return resolve(resMulti.getText());
+              }
+            } catch (errZX2) {}
+          }
+
+          // --- Method 3: jsQR Multi-pass (Center Crop, Scaled, Contrast Enhanced) ---
+          if (typeof jsQR !== 'undefined') {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+            // Pass 3.1: Center 70% crop (targets QR code framed in center)
+            try {
+              const cropW = Math.round(img.width * 0.7);
+              const cropH = Math.round(img.height * 0.7);
+              const cropX = Math.round((img.width - cropW) / 2);
+              const cropY = Math.round((img.height - cropH) / 2);
+
+              canvas.width = cropW;
+              canvas.height = cropH;
+              ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+              let imgData = ctx.getImageData(0, 0, cropW, cropH);
+              let code = jsQR(imgData.data, cropW, cropH, { inversionAttempts: "attemptBoth" });
+              if (code && code.data) return resolve(code.data);
+            } catch (errCrop) {
+              console.warn("jsQR crop error:", errCrop);
+            }
+
+            // Pass 3.2: Scaled to 1800px max
+            try {
+              let w = img.width;
+              let h = img.height;
+              const maxDim = 1800;
+              if (w > maxDim || h > maxDim) {
+                if (w > h) {
+                  h = Math.round((h * maxDim) / w);
+                  w = maxDim;
+                } else {
+                  w = Math.round((w * maxDim) / h);
+                  h = maxDim;
+                }
+              }
+              canvas.width = w;
+              canvas.height = h;
+              ctx.drawImage(img, 0, 0, w, h);
+
+              let imgData = ctx.getImageData(0, 0, w, h);
+              let code = jsQR(imgData.data, w, h, { inversionAttempts: "attemptBoth" });
+              if (code && code.data) return resolve(code.data);
+
+              // Pass 3.3: High contrast binarization
+              for (let i = 0; i < imgData.data.length; i += 4) {
+                let gray = 0.299 * imgData.data[i] + 0.587 * imgData.data[i + 1] + 0.114 * imgData.data[i + 2];
+                let val = gray > 128 ? 255 : 0;
+                imgData.data[i] = val;
+                imgData.data[i + 1] = val;
+                imgData.data[i + 2] = val;
+              }
+              let codeBinarized = jsQR(imgData.data, w, h, { inversionAttempts: "attemptBoth" });
+              if (codeBinarized && codeBinarized.data) return resolve(codeBinarized.data);
+            } catch (errFull) {
+              console.warn("jsQR full image error:", errFull);
+            }
+          }
+
+          // --- Method 4: Html5Qrcode fallback ---
           if (typeof Html5Qrcode !== 'undefined') {
             try {
               const html5QrCode = new Html5Qrcode("qrReaderHidden");
-              html5QrCode.scanFile(file, false)
-                .then(text => resolve(text))
-                .catch(() => {
-                  // Final attempt: unscaled original canvas with jsQR
-                  if (typeof jsQR !== 'undefined' && (img.width !== w || img.height !== h)) {
-                    try {
-                      canvas.width = img.width;
-                      canvas.height = img.height;
-                      ctx.drawImage(img, 0, 0);
-                      let fullData = ctx.getImageData(0, 0, img.width, img.height);
-                      let code = jsQR(fullData.data, fullData.width, fullData.height, { inversionAttempts: "attemptBoth" });
-                      if (code && code.data) return resolve(code.data);
-                    } catch (eFull) {
-                      console.warn("jsQR full attempt error:", eFull);
-                    }
-                  }
-                  reject(new Error("QR Code not found in image"));
-                });
-              return;
-            } catch (errHtml5) {
-              console.warn("Html5Qrcode error:", errHtml5);
-            }
+              const text = await html5QrCode.scanFile(file, false);
+              if (text) return resolve(text);
+            } catch (errHtml5) {}
           }
 
           reject(new Error("QR Code not found in image"));
