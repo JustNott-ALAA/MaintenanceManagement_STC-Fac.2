@@ -409,16 +409,18 @@ function getMachines() {
       
       var qrVal = qrIdx > -1 && data[i][qrIdx] !== undefined ? String(data[i][qrIdx]).trim() : "";
       var statusVal = statusIdx > -1 && data[i][statusIdx] !== undefined ? String(data[i][statusIdx]).trim() : "";
+      var serNoVal = serNoIdx > -1 && data[i][serNoIdx] !== undefined ? String(data[i][serNoIdx]).trim() : "";
 
       machines.push({
         id: String(data[i][lineIndex]).trim(),
         name: String(data[i][lineIndex]).trim(),
         qr: qrVal,
         status: statusVal,
+        serNo: serNoVal,
         details: {
           vendor: vendorIdx > -1 ? data[i][vendorIdx] : "",
           mcModel: mcModelIdx > -1 ? data[i][mcModelIdx] : "",
-          serNo: serNoIdx > -1 ? data[i][serNoIdx] : "",
+          serNo: serNoVal,
           mfgDate: mfgDate,
           powerSupply: powerSupplyIdx > -1 ? data[i][powerSupplyIdx] : "",
           option: optionIdx > -1 ? data[i][optionIdx] : "",

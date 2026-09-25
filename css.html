@@ -195,8 +195,37 @@
     background: rgba(255,255,255,0.8);
     backdrop-filter: blur(5px);
     z-index: 9999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  }
+
+  /* QR Scanner Viewfinder & Laser */
+  @keyframes scanLaser {
+    0% { top: 6%; opacity: 0.8; }
+    50% { top: 92%; opacity: 1; }
+    100% { top: 6%; opacity: 0.8; }
+  }
+  .qr-laser-line {
+    position: absolute;
+    left: 4%;
+    right: 4%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #00ff88, #38ef7d, transparent);
+    box-shadow: 0 0 10px #00ff88, 0 0 20px #00ff88;
+    animation: scanLaser 2.2s infinite ease-in-out;
+    border-radius: 50%;
+  }
+  .qr-corner-tl { position: absolute; top: -3px; left: -3px; width: 28px; height: 28px; border-top: 5px solid #00ff88; border-left: 5px solid #00ff88; border-top-left-radius: 12px; }
+  .qr-corner-tr { position: absolute; top: -3px; right: -3px; width: 28px; height: 28px; border-top: 5px solid #00ff88; border-right: 5px solid #00ff88; border-top-right-radius: 12px; }
+  .qr-corner-bl { position: absolute; bottom: -3px; left: -3px; width: 28px; height: 28px; border-bottom: 5px solid #00ff88; border-left: 5px solid #00ff88; border-bottom-left-radius: 12px; }
+  .qr-corner-br { position: absolute; bottom: -3px; right: -3px; width: 28px; height: 28px; border-bottom: 5px solid #00ff88; border-right: 5px solid #00ff88; border-bottom-right-radius: 12px; }
+  #qrReader {
+    border: none !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  #qrReader video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    border-radius: 16px;
   }
 </style>

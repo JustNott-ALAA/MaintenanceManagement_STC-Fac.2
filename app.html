@@ -167,7 +167,7 @@
                       <option value="" data-i18n="selectPlaceholder">-- กรุณาเลือก --</option>
                     </select>
                     <button type="button" class="btn btn-outline-primary fw-bold" id="btnScanQR" title="Scan QR Code">
-                      <i class="fas fa-camera me-1"></i> <span data-i18n="btnScanQR">ถ่ายรูปสแกน QR</span>
+                      <i class="fas fa-qrcode me-1"></i> <span data-i18n="btnScanQR">สแกน QR Code</span>
                     </button>
                   </div>
                   <!-- Camera capture input for mobile/LINE -->
@@ -430,6 +430,51 @@
           </a>
           <button type="button" class="btn btn-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">
             <i class="fas fa-times me-1"></i> <span data-i18n="btnCloseModal">ปิด (Close / 닫기)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live QR Scanner Modal with Viewfinder Frame & Animated Laser -->
+  <div class="modal" id="qrScannerModal" tabindex="-1" aria-hidden="true" style="background: rgba(0,0,0,0.8);">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden" style="background: #1e1e2f; color: #fff;">
+        <div class="modal-header border-0 pb-0 pt-3 px-4">
+          <h5 class="modal-title fw-bold text-white d-flex align-items-center">
+            <i class="fas fa-qrcode text-success me-2"></i>
+            <span data-i18n="scanQRTitle">สแกน QR Code เครื่องจักร</span>
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" id="btnCloseQrModal"></button>
+        </div>
+        <div class="modal-body p-3 text-center">
+          <div id="qrScannerWrapper" style="position: relative; width: 100%; max-width: 320px; height: 300px; margin: 0 auto; border-radius: 16px; overflow: hidden; background: #000;">
+            <!-- Live Video Stream Target -->
+            <div id="qrReader" style="width: 100%; height: 100%;"></div>
+            
+            <!-- Viewfinder Overlay Box & Animated Laser Line -->
+            <div id="qrViewfinderOverlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; display: flex; align-items: center; justify-content: center;">
+              <div style="position: relative; width: 210px; height: 210px; border: 1px solid rgba(255,255,255,0.25); border-radius: 14px; box-shadow: 0 0 0 1000px rgba(0,0,0,0.5);">
+                <div class="qr-corner-tl"></div>
+                <div class="qr-corner-tr"></div>
+                <div class="qr-corner-bl"></div>
+                <div class="qr-corner-br"></div>
+                <div class="qr-laser-line"></div>
+              </div>
+            </div>
+          </div>
+          
+          <p class="text-white-50 small mt-3 mb-1" data-i18n="scanQRHint">
+            <i class="fas fa-bullseye text-warning me-1"></i> เล็งกรอบให้ตรงกับ QR Code ของเครื่องจักร
+          </p>
+          <div id="qrScanStatusMsg" class="small text-info mt-1" style="min-height: 20px;"></div>
+        </div>
+        <div class="modal-footer border-0 pt-0 pb-3 px-4 d-flex justify-content-between">
+          <button type="button" class="btn btn-outline-light btn-sm rounded-pill px-3" id="btnSwitchToUpload">
+            <i class="fas fa-image me-1"></i> <span data-i18n="btnUploadQR">เลือกรูปแทน</span>
+          </button>
+          <button type="button" class="btn btn-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal" id="btnCancelQrScan">
+            <span data-i18n="swalCancel">ยกเลิก</span>
           </button>
         </div>
       </div>
