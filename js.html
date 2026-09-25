@@ -88,17 +88,10 @@
       spStatus: "สถานะเริ่มต้น",
       btnSavePart: "บันทึกข้อมูล",
       reportImageLabel: "รูปภาพจากการแจ้งซ่อม",
-      btnScanQR: "สแกน QR",
-      scanQRTitle: "สแกน QR Code เครื่องจักร",
-      scanQRHint: "ส่องกล้องไปที่ QR Code ของเครื่องจักรเพื่อเลือกอัตโนมัติ",
-      btnTakeQRPhoto: "ถ่ายรูป QR Code",
-      lineNotice: "ตรวจพบการเปิดผ่านแอป LINE หากต้องการใช้กล้องสด",
-      openInChrome: "เปิดใน Chrome / Safari",
-      qrNotFoundInImage: "ไม่พบ QR Code ในภาพ กรุณาลองถ่ายภาพใหม่อีกครั้งให้ใกล้และชัดเจนขึ้น",
-      qrCameraRestricted: "แอปนี้จำกัดการเข้าถึงกล้องสด (เช่น LINE)",
-      qrCameraRestrictedDesc: "กรุณากดปุ่ม <b>'ถ่ายรูป QR Code'</b> ด้านล่างเพื่อสแกน",
+      btnScanQR: "ถ่ายรูปสแกน QR",
       qrFoundTitle: "เลือกเครื่องจักรสำเร็จ",
-      qrNotFoundTitle: "ไม่พบข้อมูลเครื่องจักร"
+      qrNotFoundTitle: "ไม่พบ QR Code ในภาพ",
+      qrNotFoundDesc: "ไม่พบ QR Code ในภาพที่ถ่าย กรุณาลองถ่ายใหม่อีกครั้งให้ใกล้และชัดเจนขึ้น"
     },
     en: {
       appTitle: "Maintenance System",
@@ -188,17 +181,10 @@
       spStatus: "Initial Status",
       btnSavePart: "Save Data",
       reportImageLabel: "Report Attachment",
-      btnScanQR: "Scan QR",
-      scanQRTitle: "Scan Machine QR Code",
-      scanQRHint: "Point your camera at the machine QR code to select automatically",
-      btnTakeQRPhoto: "Take QR Photo",
-      lineNotice: "LINE in-app browser detected. For live camera:",
-      openInChrome: "Open in Chrome / Safari",
-      qrNotFoundInImage: "No QR Code found in photo. Please take a clearer photo closer to the code.",
-      qrCameraRestricted: "Live camera is restricted in this in-app browser",
-      qrCameraRestrictedDesc: "Please tap <b>'Take QR Photo'</b> below to scan",
+      btnScanQR: "Capture QR Code",
       qrFoundTitle: "Machine Selected",
-      qrNotFoundTitle: "Machine Not Found"
+      qrNotFoundTitle: "QR Code Not Found",
+      qrNotFoundDesc: "Could not detect a QR Code in the photo. Please try again with clear focus."
     },
     ko: {
       appTitle: "유지보수 시스템",
@@ -288,17 +274,10 @@
       spStatus: "초기 상태",
       btnSavePart: "저장하기",
       reportImageLabel: "신고 첨부 사진",
-      btnScanQR: "QR 스캔",
-      scanQRTitle: "기계 QR 코드 스캔",
-      scanQRHint: "기계의 QR 코드를 카메라로 비추면 자동으로 선택됩니다",
-      btnTakeQRPhoto: "QR 사진 촬영",
-      lineNotice: "LINE 인앱 브라우저가 감지되었습니다. 실시간 카메라를 사용하려면:",
-      openInChrome: "Chrome / Safari에서 열기",
-      qrNotFoundInImage: "사진에서 QR 코드를 찾을 수 없습니다. 더 가깝고 선명하게 다시 촬영해주세요.",
-      qrCameraRestricted: "이 인앱 브라우저에서는 실시간 카메라가 제한됩니다",
-      qrCameraRestrictedDesc: "아래 <b>'QR 사진 촬영'</b> 버튼을 눌러 스캔하세요",
+      btnScanQR: "QR 사진 스캔",
       qrFoundTitle: "기계 선택 완료",
-      qrNotFoundTitle: "기계를 찾을 수 없습니다"
+      qrNotFoundTitle: "QR 코드를 찾을 수 없습니다",
+      qrNotFoundDesc: "사진에서 QR 코드를 인식하지 못했습니다. 더 가깝고 선명하게 다시 촬영해주세요."
     }
   };
 
@@ -1292,236 +1271,120 @@
     }
   });
 
-  // --- QR Code Scanner for Machine Selection ---
-  let html5QrScanner = null;
-
+  // --- QR Code Photo Scanner for Machine Selection ---
   document.getElementById('btnScanQR')?.addEventListener('click', () => {
-    const modalEl = document.getElementById('qrScannerModal');
-    if (modalEl) {
-      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-      modal.show();
+    const input = document.getElementById('qrCameraInput');
+    if (input) {
+      input.value = ''; // Reset before clicking to allow retaking photo
+      input.click();
     }
-    // Launch camera immediately in the direct user click gesture for browser permission
-    initCameraScanner();
   });
 
-  const qrReaderModal = document.getElementById('qrScannerModal');
-  qrReaderModal?.addEventListener('hidden.bs.modal', () => {
-    stopQRScanner();
-  });
-  document.getElementById('btnCloseQrModal')?.addEventListener('click', () => {
-    stopQRScanner();
-  });
-  document.getElementById('btnCancelQrScan')?.addEventListener('click', () => {
-    stopQRScanner();
-  });
-
-  async function initCameraScanner() {
-    await stopQRScanner();
-
-    const qrReaderEl = document.getElementById('qrReader');
-    if (qrReaderEl) {
-      qrReaderEl.innerHTML = '<div class="text-white small p-3 text-center"><i class="fas fa-spinner fa-spin fa-2x mb-2 d-block"></i> กำลังเปิดกล้อง...</div>';
-    }
-
-    if (typeof Html5Qrcode === 'undefined') {
-      if (qrReaderEl) {
-        qrReaderEl.innerHTML = '<div class="p-3 text-white small text-center">ไม่พบไลบรารีสแกนเนอร์ กรุณารีเฟรชหน้าเว็บ</div>';
-      }
-      return;
-    }
-
-    try {
-      html5QrScanner = new Html5Qrcode("qrReader");
-      const config = {
-        fps: 10,
-        qrbox: function(viewfinderWidth, viewfinderHeight) {
-          let minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-          let qrboxSize = Math.floor(minEdge * 0.75);
-          return { width: Math.max(qrboxSize, 180), height: Math.max(qrboxSize, 180) };
-        }
-      };
-
-      // Attempt 1: rear camera (facingMode environment)
-      try {
-        await html5QrScanner.start(
-          { facingMode: "environment" },
-          config,
-          (decodedText) => onQRCodeScanned(decodedText),
-          () => {} // Frame error ignore
-        );
-        return;
-      } catch (err1) {
-        console.warn("facingMode: environment failed, trying camera devices list...", err1);
-      }
-
-      // Attempt 2: camera device list enumeration
-      const devices = await Html5Qrcode.getCameras();
-      if (devices && devices.length > 0) {
-        const backCam = devices.find(d => {
-          const lbl = (d.label || '').toLowerCase();
-          return lbl.includes('back') || lbl.includes('rear') || lbl.includes('environment');
-        });
-        const camId = backCam ? backCam.id : devices[devices.length - 1].id;
-        await html5QrScanner.start(
-          camId,
-          config,
-          (decodedText) => onQRCodeScanned(decodedText),
-          () => {}
-        );
-        return;
-      }
-
-      // Attempt 3: user camera
-      await html5QrScanner.start(
-        { facingMode: "user" },
-        config,
-        (decodedText) => onQRCodeScanned(decodedText),
-        () => {}
-      );
-    } catch (finalErr) {
-      console.warn("Live camera start failed, showing fallback UI:", finalErr);
-      showCameraFallbackUI(finalErr);
-    }
-  }
-
-  function showCameraFallbackUI(err) {
-    stopQRScanner();
-    const qrReaderEl = document.getElementById('qrReader');
-    if (qrReaderEl) {
-      let desc = "ไม่สามารถเปิดกล้องสดได้ กรุณาตรวจสอบการอนุญาตสิทธิ์กล้องของแอป";
-      if (err && err.name === 'NotAllowedError') {
-        desc = "สิทธิ์การเข้าถึงกล้องถูกปฏิเสธ (Permission Denied) กรุณาอนุญาตการเข้าถึงกล้องในการตั้งค่าแอป";
-      }
-      qrReaderEl.innerHTML = `
-        <div class="p-3 text-center w-100 bg-white rounded-3 border">
-          <i class="fas fa-video-slash text-warning fa-3x mb-2"></i>
-          <h6 class="fw-bold mb-1">ไม่สามารถเปิดกล้องสดได้</h6>
-          <p class="small text-muted mb-3">${desc}</p>
-          <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" id="btnFallbackTakeQR">
-            <i class="fas fa-camera me-1"></i> ถ่ายรูป QR Code แทน
-          </button>
-        </div>
-      `;
-      document.getElementById('btnFallbackTakeQR')?.addEventListener('click', () => {
-        document.getElementById('qrFileInput')?.click();
-      });
-    }
-  }
-
-  function stopQRScanner() {
-    return new Promise((resolve) => {
-      if (html5QrScanner) {
-        const scannerInstance = html5QrScanner;
-        html5QrScanner = null;
-        scannerInstance.stop().then(() => {
-          try { scannerInstance.clear(); } catch(e){}
-          resolve();
-        }).catch(err => {
-          console.warn("Stop scanner error:", err);
-          try { scannerInstance.clear(); } catch(e){}
-          resolve();
-        });
-      } else {
-        resolve();
-      }
-    });
-  }
-
-  function resizeQRImageIfNeeded(file) {
-    return new Promise((resolve) => {
-      if (!file || !file.type || !file.type.startsWith('image/')) {
-        return resolve(file);
-      }
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const img = new Image();
-        img.onload = () => {
-          const maxDim = 1200;
-          let w = img.width;
-          let h = img.height;
-          if (w <= maxDim && h <= maxDim) {
-            return resolve(file);
-          }
-          if (w > h) {
-            h = Math.round((h * maxDim) / w);
-            w = maxDim;
-          } else {
-            w = Math.round((w * maxDim) / h);
-            h = maxDim;
-          }
-          const canvas = document.createElement('canvas');
-          canvas.width = w;
-          canvas.height = h;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, w, h);
-          canvas.toBlob((blob) => {
-            if (blob) {
-              resolve(new File([blob], file.name || "qr.jpg", { type: "image/jpeg" }));
-            } else {
-              resolve(file);
-            }
-          }, 'image/jpeg', 0.92);
-        };
-        img.onerror = () => resolve(file);
-        img.src = event.target.result;
-      };
-      reader.onerror = () => resolve(file);
-      reader.readAsDataURL(file);
-    });
-  }
-
-  document.getElementById('btnCaptureQRFile')?.addEventListener('click', () => {
-    document.getElementById('qrFileInput')?.click();
-  });
-
-  document.getElementById('qrFileInput')?.addEventListener('change', async (e) => {
+  document.getElementById('qrCameraInput')?.addEventListener('change', async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
 
     showLoading();
     try {
-      await stopQRScanner();
-      
-      const processedFile = await resizeQRImageIfNeeded(file);
-      const fileScanner = new Html5Qrcode("qrReader");
-      
-      let decodedText = null;
-      try {
-        decodedText = await fileScanner.scanFile(processedFile, false);
-      } catch (errResized) {
-        console.warn("Scan resized image failed, trying original file...", errResized);
-        decodedText = await fileScanner.scanFile(file, false);
-      }
-
+      const decodedText = await decodeQRFromImage(file);
       hideLoading();
       if (decodedText) {
         onQRCodeScanned(decodedText);
       }
-    } catch (scanErr) {
+    } catch (err) {
       hideLoading();
-      console.error("QR Scan file error:", scanErr);
+      console.warn("Decode QR failed:", err);
       Swal.fire({
         icon: 'warning',
         title: (i18n[currentLang] && i18n[currentLang].qrNotFoundTitle) || 'ไม่พบ QR Code ในภาพ',
-        text: (i18n[currentLang] && i18n[currentLang].qrNotFoundInImage) || 'กรุณาลองถ่ายภาพใหม่อีกครั้งให้ใกล้และชัดเจนขึ้น'
+        text: (i18n[currentLang] && i18n[currentLang].qrNotFoundDesc) || 'กรุณาลองถ่ายภาพใหม่อีกครั้งให้ใกล้และชัดเจนขึ้น'
       });
     } finally {
       e.target.value = '';
     }
   });
 
+  function decodeQRFromImage(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          // 1. Scaled canvas (max 1200px) for speed and high resolution handling
+          const maxDim = 1200;
+          let w = img.width;
+          let h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+
+          // Fast decode with jsQR
+          if (typeof jsQR !== 'undefined') {
+            try {
+              let imgData = ctx.getImageData(0, 0, w, h);
+              let code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: "dontInvert" });
+              if (code && code.data) return resolve(code.data);
+
+              code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: "attemptBoth" });
+              if (code && code.data) return resolve(code.data);
+            } catch (errJsQR) {
+              console.warn("jsQR scaled attempt error:", errJsQR);
+            }
+          }
+
+          // Fallback to Html5Qrcode.scanFile if jsQR didn't catch it
+          if (typeof Html5Qrcode !== 'undefined') {
+            try {
+              const html5QrCode = new Html5Qrcode("qrReaderHidden");
+              html5QrCode.scanFile(file, false)
+                .then(text => resolve(text))
+                .catch(() => {
+                  // Final attempt: unscaled original canvas with jsQR
+                  if (typeof jsQR !== 'undefined' && (img.width !== w || img.height !== h)) {
+                    try {
+                      canvas.width = img.width;
+                      canvas.height = img.height;
+                      ctx.drawImage(img, 0, 0);
+                      let fullData = ctx.getImageData(0, 0, img.width, img.height);
+                      let code = jsQR(fullData.data, fullData.width, fullData.height, { inversionAttempts: "attemptBoth" });
+                      if (code && code.data) return resolve(code.data);
+                    } catch (eFull) {
+                      console.warn("jsQR full attempt error:", eFull);
+                    }
+                  }
+                  reject(new Error("QR Code not found in image"));
+                });
+              return;
+            } catch (errHtml5) {
+              console.warn("Html5Qrcode error:", errHtml5);
+            }
+          }
+
+          reject(new Error("QR Code not found in image"));
+        };
+        img.onerror = () => reject(new Error("Failed to load image"));
+        img.src = e.target.result;
+      };
+      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.readAsDataURL(file);
+    });
+  }
+
   function onQRCodeScanned(rawCode) {
     if (!rawCode) return;
     const cleanCode = rawCode.trim();
-
-    // Stop scanner and close modal immediately
-    stopQRScanner();
-    const modalEl = document.getElementById('qrScannerModal');
-    if (modalEl) {
-      const modal = bootstrap.Modal.getInstance(modalEl);
-      if (modal) modal.hide();
-    }
 
     // Match machine by:
     // 1. QR code column value (m.qr)
