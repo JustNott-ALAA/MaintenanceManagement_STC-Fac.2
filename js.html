@@ -1299,6 +1299,19 @@
   }
 
   document.getElementById('btnScanQR')?.addEventListener('click', () => {
+    // Check if opened inside LINE in-app browser
+    const isLine = /Line\//i.test(navigator.userAgent);
+    if (isLine) {
+      // In LINE: Open native camera immediately for fast 1-click scanning
+      const input = document.getElementById('qrCameraInput');
+      if (input) {
+        input.value = '';
+        input.click();
+      }
+      return;
+    }
+
+    // In Chrome / external browser: Open live viewfinder modal
     const modal = getQrModal();
     if (modal) modal.show();
     startLiveScanner();
