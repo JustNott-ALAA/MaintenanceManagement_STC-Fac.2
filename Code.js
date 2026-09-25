@@ -17,7 +17,8 @@ function doGet(e) {
   return HtmlService.createTemplateFromFile('app')
       .evaluate()
       .setTitle('Maintenance Management System')
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 function include(filename) {

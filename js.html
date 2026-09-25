@@ -91,6 +91,12 @@
       btnScanQR: "สแกน QR",
       scanQRTitle: "สแกน QR Code เครื่องจักร",
       scanQRHint: "ส่องกล้องไปที่ QR Code ของเครื่องจักรเพื่อเลือกอัตโนมัติ",
+      btnTakeQRPhoto: "ถ่ายรูป QR Code",
+      lineNotice: "ตรวจพบการเปิดผ่านแอป LINE หากต้องการใช้กล้องสด",
+      openInChrome: "เปิดใน Chrome / Safari",
+      qrNotFoundInImage: "ไม่พบ QR Code ในภาพ กรุณาลองถ่ายภาพใหม่อีกครั้งให้ใกล้และชัดเจนขึ้น",
+      qrCameraRestricted: "แอปนี้จำกัดการเข้าถึงกล้องสด (เช่น LINE)",
+      qrCameraRestrictedDesc: "กรุณากดปุ่ม <b>'ถ่ายรูป QR Code'</b> ด้านล่างเพื่อสแกน",
       qrFoundTitle: "เลือกเครื่องจักรสำเร็จ",
       qrNotFoundTitle: "ไม่พบข้อมูลเครื่องจักร"
     },
@@ -185,6 +191,12 @@
       btnScanQR: "Scan QR",
       scanQRTitle: "Scan Machine QR Code",
       scanQRHint: "Point your camera at the machine QR code to select automatically",
+      btnTakeQRPhoto: "Take QR Photo",
+      lineNotice: "LINE in-app browser detected. For live camera:",
+      openInChrome: "Open in Chrome / Safari",
+      qrNotFoundInImage: "No QR Code found in photo. Please take a clearer photo closer to the code.",
+      qrCameraRestricted: "Live camera is restricted in this in-app browser",
+      qrCameraRestrictedDesc: "Please tap <b>'Take QR Photo'</b> below to scan",
       qrFoundTitle: "Machine Selected",
       qrNotFoundTitle: "Machine Not Found"
     },
@@ -279,6 +291,12 @@
       btnScanQR: "QR 스캔",
       scanQRTitle: "기계 QR 코드 스캔",
       scanQRHint: "기계의 QR 코드를 카메라로 비추면 자동으로 선택됩니다",
+      btnTakeQRPhoto: "QR 사진 촬영",
+      lineNotice: "LINE 인앱 브라우저가 감지되었습니다. 실시간 카메라를 사용하려면:",
+      openInChrome: "Chrome / Safari에서 열기",
+      qrNotFoundInImage: "사진에서 QR 코드를 찾을 수 없습니다. 더 가깝고 선명하게 다시 촬영해주세요.",
+      qrCameraRestricted: "이 인앱 브라우저에서는 실시간 카메라가 제한됩니다",
+      qrCameraRestrictedDesc: "아래 <b>'QR 사진 촬영'</b> 버튼을 눌러 스캔하세요",
       qrFoundTitle: "기계 선택 완료",
       qrNotFoundTitle: "기계를 찾을 수 없습니다"
     }
@@ -1298,37 +1316,90 @@
     stopQRScanner();
   });
 
-  function initCameraScanner() {
-    stopQRScanner().finally(() => {
+  async function initCameraScanner() {
+    await stopQRScanner();
+
+    const isLine = /Line\//i.test(navigator.userAgent) || /Line/i.test(navigator.userAgent);
+    const lineNoticeEl = document.getElementById('lineBrowserNotice');
+    if (lineNoticeEl && isLine) {
+      lineNoticeEl.classList.remove('d-none');
+    }
+
+    const qrReaderEl = document.getElementById('qrReader');
+    if (qrReaderEl) {
+      qrReaderEl.innerHTML = '';
+    }
+
+    // In LINE in-app browser or when getUserMedia is not supported, show friendly photo capture UI
+    if (isLine || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showCameraFallbackUI();
+      return;
+    }
+
+    try {
+      html5QrScanner = new Html5Qrcode("qrReader");
+      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+      
+      // Try facingMode: environment first
       try {
-        html5QrScanner = new Html5Qrcode("qrReader");
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-        
-        html5QrScanner.start(
+        await html5QrScanner.start(
           { facingMode: "environment" },
           config,
-          (decodedText) => {
-            onQRCodeScanned(decodedText);
-          },
-          (errorMessage) => {
-            // Frame parse error - ignore continuous detection noise
-          }
-        ).catch(err => {
-          console.error("Camera start error:", err);
-          Swal.fire({
-            icon: 'error',
-            title: 'Camera Error',
-            text: 'ไม่สามารถเปิดกล้องได้ กรุณาตรวจสอบสิทธิ์การเข้าถึงกล้อง / Cannot access camera.'
-          });
-          const modalEl = document.getElementById('qrScannerModal');
-          if (modalEl) {
-            bootstrap.Modal.getInstance(modalEl)?.hide();
-          }
-        });
-      } catch (err) {
-        console.error("Scanner init error:", err);
+          (decodedText) => onQRCodeScanned(decodedText),
+          () => {}
+        );
+        return;
+      } catch (err1) {
+        console.warn("facingMode: environment failed, trying camera enumeration...", err1);
       }
-    });
+
+      // Try camera enumeration
+      const devices = await Html5Qrcode.getCameras();
+      if (devices && devices.length > 0) {
+        const backCam = devices.find(d => 
+          (d.label && (d.label.toLowerCase().includes('back') || 
+                       d.label.toLowerCase().includes('rear') || 
+                       d.label.toLowerCase().includes('environment')))
+        );
+        const camId = backCam ? backCam.id : devices[devices.length - 1].id;
+        await html5QrScanner.start(
+          camId,
+          config,
+          (decodedText) => onQRCodeScanned(decodedText),
+          () => {}
+        );
+        return;
+      }
+
+      throw new Error("No cameras available");
+    } catch (err) {
+      console.warn("Live camera start failed, switching to photo capture UI:", err);
+      showCameraFallbackUI();
+    }
+  }
+
+  function showCameraFallbackUI() {
+    stopQRScanner();
+    const qrReaderEl = document.getElementById('qrReader');
+    if (qrReaderEl) {
+      const title = (i18n[currentLang] && i18n[currentLang].qrCameraRestricted) || "แอปนี้จำกัดการเข้าถึงกล้องสด (เช่น LINE)";
+      const desc = (i18n[currentLang] && i18n[currentLang].qrCameraRestrictedDesc) || "กรุณากดปุ่ม <b>'ถ่ายรูป QR Code'</b> ด้านล่างเพื่อสแกน";
+      const btnText = (i18n[currentLang] && i18n[currentLang].btnTakeQRPhoto) || "ถ่ายรูป QR Code";
+      
+      qrReaderEl.innerHTML = `
+        <div class="p-3 text-center w-100 bg-white rounded-3">
+          <i class="fas fa-camera text-primary fa-3x mb-2"></i>
+          <h6 class="fw-bold mb-1">${title}</h6>
+          <p class="small text-muted mb-3">${desc}</p>
+          <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" id="btnFallbackTakeQR">
+            <i class="fas fa-camera me-2"></i> ${btnText}
+          </button>
+        </div>
+      `;
+      document.getElementById('btnFallbackTakeQR')?.addEventListener('click', () => {
+        document.getElementById('qrFileInput')?.click();
+      });
+    }
   }
 
   function stopQRScanner() {
@@ -1349,6 +1420,96 @@
       }
     });
   }
+
+  function resizeQRImageIfNeeded(file) {
+    return new Promise((resolve) => {
+      if (!file || !file.type || !file.type.startsWith('image/')) {
+        return resolve(file);
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 1200;
+          let w = img.width;
+          let h = img.height;
+          if (w <= maxDim && h <= maxDim) {
+            return resolve(file);
+          }
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(new File([blob], file.name || "qr.jpg", { type: "image/jpeg" }));
+            } else {
+              resolve(file);
+            }
+          }, 'image/jpeg', 0.92);
+        };
+        img.onerror = () => resolve(file);
+        img.src = event.target.result;
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  document.getElementById('btnCaptureQRFile')?.addEventListener('click', () => {
+    document.getElementById('qrFileInput')?.click();
+  });
+
+  document.getElementById('linkOpenExternal')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    const cleanUrl = window.location.href.split('?')[0];
+    const targetUrl = cleanUrl + '?openExternalBrowser=1';
+    window.location.href = targetUrl;
+  });
+
+  document.getElementById('qrFileInput')?.addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    showLoading();
+    try {
+      await stopQRScanner();
+      
+      const processedFile = await resizeQRImageIfNeeded(file);
+      const fileScanner = new Html5Qrcode("qrReader");
+      
+      let decodedText = null;
+      try {
+        decodedText = await fileScanner.scanFile(processedFile, false);
+      } catch (errResized) {
+        console.warn("Scan resized image failed, trying original file...", errResized);
+        decodedText = await fileScanner.scanFile(file, false);
+      }
+
+      hideLoading();
+      if (decodedText) {
+        onQRCodeScanned(decodedText);
+      }
+    } catch (scanErr) {
+      hideLoading();
+      console.error("QR Scan file error:", scanErr);
+      Swal.fire({
+        icon: 'warning',
+        title: (i18n[currentLang] && i18n[currentLang].qrNotFoundTitle) || 'ไม่พบ QR Code ในภาพ',
+        text: (i18n[currentLang] && i18n[currentLang].qrNotFoundInImage) || 'กรุณาลองถ่ายภาพใหม่อีกครั้งให้ใกล้และชัดเจนขึ้น'
+      });
+    } finally {
+      e.target.value = '';
+    }
+  });
 
   function onQRCodeScanned(rawCode) {
     if (!rawCode) return;

@@ -444,8 +444,20 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="btnCloseQrModal"></button>
         </div>
         <div class="modal-body p-3 text-center">
-          <div id="qrReader" style="width: 100%; border-radius: 12px; overflow: hidden; background: #000; min-height: 260px;"></div>
-          <p class="text-muted small mt-3 mb-0" data-i18n="scanQRHint">ส่องกล้องไปที่ QR Code ของเครื่องจักรเพื่อเลือกอัตโนมัติ</p>
+          <div id="qrReader" style="width: 100%; border-radius: 12px; overflow: hidden; background: #f8f9fa; min-height: 250px;" class="d-flex align-items-center justify-content-center border"></div>
+          <p class="text-muted small mt-3 mb-2" id="qrInstructionText" data-i18n="scanQRHint">ส่องกล้องไปที่ QR Code ของเครื่องจักรเพื่อเลือกอัตโนมัติ</p>
+          
+          <!-- Secondary Option: Take Photo / File -->
+          <div class="pt-2 border-top mt-2">
+            <input type="file" id="qrFileInput" accept="image/*" capture="environment" class="d-none">
+            <button type="button" class="btn btn-outline-primary rounded-pill px-4 fw-bold w-100 mb-2" id="btnCaptureQRFile">
+              <i class="fas fa-camera me-2"></i><span data-i18n="btnTakeQRPhoto">ถ่ายรูป QR Code</span>
+            </button>
+            <div id="lineBrowserNotice" class="d-none mt-2 p-2 bg-light rounded text-muted small" style="font-size: 0.75rem;">
+              <i class="fas fa-info-circle text-primary me-1"></i> <span data-i18n="lineNotice">ตรวจพบการเปิดผ่านแอป LINE หากต้องการใช้กล้องสด</span> 
+              <a href="#" id="linkOpenExternal" class="fw-bold text-decoration-none" data-i18n="openInChrome">เปิดใน Chrome / Safari</a>
+            </div>
+          </div>
         </div>
         <div class="modal-footer border-0 pt-0 pb-3 px-4 justify-content-center">
           <button type="button" class="btn btn-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal" id="btnCancelQrScan">
