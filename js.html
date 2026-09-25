@@ -1076,9 +1076,6 @@
     const localeMap = { th: 'th-TH', en: 'en-US', ko: 'ko-KR' };
     const dateLocale = localeMap[currentLang] || 'th-TH';
 
-    const tImg1 = data.ticket ? (data.ticket.Image_1 || data.ticket.Attachment1) : '';
-    const tImg2 = data.ticket ? (data.ticket.Image_2 || data.ticket.Attachment2) : '';
-
     allEvents.forEach((ev, idx) => {
       let dateStr = isNaN(ev.time.getTime()) ? '-' : ev.time.toLocaleString(dateLocale);
       if(ev.type === 'status') {
@@ -1090,17 +1087,6 @@
           else if (h.New_Status.includes('กำลังซ่อม')) statusColor = "color: #D97706;";
           else if (h.New_Status.includes('รออะไหล่')) statusColor = "color: #fd7e14;";
         }
-        
-        let isInitialCreation = (h.Old_Status === 'New' || h.Old_Status === '-' || idx === allEvents.length - 1);
-        let reportImgHtml = '';
-        if (isInitialCreation && (tImg1 || tImg2)) {
-          if (tImg1) {
-            reportImgHtml += `<div class="d-inline-block position-relative me-2 mt-2" onclick="openImageModal('${tImg1}', '${repLbl} 1')" style="cursor: pointer;" title="Zoom"><img src="${tImg1}" class="img-thumbnail shadow-sm" style="height:60px; width:60px; object-fit:cover; border-radius:10px;" alt="Report 1"></div>`;
-          }
-          if (tImg2) {
-            reportImgHtml += `<div class="d-inline-block position-relative me-2 mt-2" onclick="openImageModal('${tImg2}', '${repLbl} 2')" style="cursor: pointer;" title="Zoom"><img src="${tImg2}" class="img-thumbnail shadow-sm" style="height:60px; width:60px; object-fit:cover; border-radius:10px;" alt="Report 2"></div>`;
-          }
-        }
 
         tlContainer.innerHTML += `
           <div class="timeline-item">
@@ -1108,7 +1094,6 @@
             <div class="timeline-content">
               <span class="timeline-date">${dateStr} - ${h.Update_By || '-'}</span>
               <p class="mb-0 fw-bold">${chgStatusText} <span class="text-muted">${h.Old_Status || '-'}</span> <i class="fas fa-arrow-right mx-1"></i> <span style="${statusColor}">${h.New_Status || '-'}</span></p>
-              ${reportImgHtml ? `<div class="timeline-images mt-1">${reportImgHtml}</div>` : ''}
             </div>
           </div>
         `;
