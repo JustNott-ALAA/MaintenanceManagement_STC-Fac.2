@@ -1301,66 +1301,67 @@
       const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
       modal.show();
     }
-  });
-
-  const qrReaderModal = document.getElementById('qrScannerModal');
-  qrReaderModal?.addEventListener('shown.bs.modal', () => {
-    if (typeof Html5Qrcode === 'undefined') {
-      Swal.fire('Error', 'QR Scanner library not loaded', 'error');
-      return;
-    }
+    // Launch camera immediately in the direct user click gesture for browser permission
     initCameraScanner();
   });
 
+  const qrReaderModal = document.getElementById('qrScannerModal');
   qrReaderModal?.addEventListener('hidden.bs.modal', () => {
+    stopQRScanner();
+  });
+  document.getElementById('btnCloseQrModal')?.addEventListener('click', () => {
+    stopQRScanner();
+  });
+  document.getElementById('btnCancelQrScan')?.addEventListener('click', () => {
     stopQRScanner();
   });
 
   async function initCameraScanner() {
     await stopQRScanner();
 
-    const isLine = /Line\//i.test(navigator.userAgent) || /Line/i.test(navigator.userAgent);
-    const lineNoticeEl = document.getElementById('lineBrowserNotice');
-    if (lineNoticeEl && isLine) {
-      lineNoticeEl.classList.remove('d-none');
-    }
-
     const qrReaderEl = document.getElementById('qrReader');
     if (qrReaderEl) {
-      qrReaderEl.innerHTML = '';
+      qrReaderEl.innerHTML = '<div class="text-white small p-3 text-center"><i class="fas fa-spinner fa-spin fa-2x mb-2 d-block"></i> กำลังเปิดกล้อง...</div>';
     }
 
-    // In LINE in-app browser or when getUserMedia is not supported, show friendly photo capture UI
-    if (isLine || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      showCameraFallbackUI();
+    if (typeof Html5Qrcode === 'undefined') {
+      if (qrReaderEl) {
+        qrReaderEl.innerHTML = '<div class="p-3 text-white small text-center">ไม่พบไลบรารีสแกนเนอร์ กรุณารีเฟรชหน้าเว็บ</div>';
+      }
       return;
     }
 
     try {
       html5QrScanner = new Html5Qrcode("qrReader");
-      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-      
-      // Try facingMode: environment first
+      const config = {
+        fps: 10,
+        qrbox: function(viewfinderWidth, viewfinderHeight) {
+          let minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+          let qrboxSize = Math.floor(minEdge * 0.75);
+          return { width: Math.max(qrboxSize, 180), height: Math.max(qrboxSize, 180) };
+        }
+      };
+
+      // Attempt 1: rear camera (facingMode environment)
       try {
         await html5QrScanner.start(
           { facingMode: "environment" },
           config,
           (decodedText) => onQRCodeScanned(decodedText),
-          () => {}
+          () => {} // Frame error ignore
         );
         return;
       } catch (err1) {
-        console.warn("facingMode: environment failed, trying camera enumeration...", err1);
+        console.warn("facingMode: environment failed, trying camera devices list...", err1);
       }
 
-      // Try camera enumeration
+      // Attempt 2: camera device list enumeration
       const devices = await Html5Qrcode.getCameras();
       if (devices && devices.length > 0) {
-        const backCam = devices.find(d => 
-          (d.label && (d.label.toLowerCase().includes('back') || 
-                       d.label.toLowerCase().includes('rear') || 
-                       d.label.toLowerCase().includes('environment')))
-        );
+        const backCam = devices.find(d => {
+          const lbl = (d.label || '').toLowerCase();
+          return lbl.includes('back') || lbl.includes('rear') || lbl.includes('environment');
+        });
         const camId = backCam ? backCam.id : devices[devices.length - 1].id;
         await html5QrScanner.start(
           camId,
@@ -1371,28 +1372,34 @@
         return;
       }
 
-      throw new Error("No cameras available");
-    } catch (err) {
-      console.warn("Live camera start failed, switching to photo capture UI:", err);
-      showCameraFallbackUI();
+      // Attempt 3: user camera
+      await html5QrScanner.start(
+        { facingMode: "user" },
+        config,
+        (decodedText) => onQRCodeScanned(decodedText),
+        () => {}
+      );
+    } catch (finalErr) {
+      console.warn("Live camera start failed, showing fallback UI:", finalErr);
+      showCameraFallbackUI(finalErr);
     }
   }
 
-  function showCameraFallbackUI() {
+  function showCameraFallbackUI(err) {
     stopQRScanner();
     const qrReaderEl = document.getElementById('qrReader');
     if (qrReaderEl) {
-      const title = (i18n[currentLang] && i18n[currentLang].qrCameraRestricted) || "แอปนี้จำกัดการเข้าถึงกล้องสด (เช่น LINE)";
-      const desc = (i18n[currentLang] && i18n[currentLang].qrCameraRestrictedDesc) || "กรุณากดปุ่ม <b>'ถ่ายรูป QR Code'</b> ด้านล่างเพื่อสแกน";
-      const btnText = (i18n[currentLang] && i18n[currentLang].btnTakeQRPhoto) || "ถ่ายรูป QR Code";
-      
+      let desc = "ไม่สามารถเปิดกล้องสดได้ กรุณาตรวจสอบการอนุญาตสิทธิ์กล้องของแอป";
+      if (err && err.name === 'NotAllowedError') {
+        desc = "สิทธิ์การเข้าถึงกล้องถูกปฏิเสธ (Permission Denied) กรุณาอนุญาตการเข้าถึงกล้องในการตั้งค่าแอป";
+      }
       qrReaderEl.innerHTML = `
-        <div class="p-3 text-center w-100 bg-white rounded-3">
-          <i class="fas fa-camera text-primary fa-3x mb-2"></i>
-          <h6 class="fw-bold mb-1">${title}</h6>
+        <div class="p-3 text-center w-100 bg-white rounded-3 border">
+          <i class="fas fa-video-slash text-warning fa-3x mb-2"></i>
+          <h6 class="fw-bold mb-1">ไม่สามารถเปิดกล้องสดได้</h6>
           <p class="small text-muted mb-3">${desc}</p>
           <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" id="btnFallbackTakeQR">
-            <i class="fas fa-camera me-2"></i> ${btnText}
+            <i class="fas fa-camera me-1"></i> ถ่ายรูป QR Code แทน
           </button>
         </div>
       `;
@@ -1466,13 +1473,6 @@
 
   document.getElementById('btnCaptureQRFile')?.addEventListener('click', () => {
     document.getElementById('qrFileInput')?.click();
-  });
-
-  document.getElementById('linkOpenExternal')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    const cleanUrl = window.location.href.split('?')[0];
-    const targetUrl = cleanUrl + '?openExternalBrowser=1';
-    window.location.href = targetUrl;
   });
 
   document.getElementById('qrFileInput')?.addEventListener('change', async (e) => {
