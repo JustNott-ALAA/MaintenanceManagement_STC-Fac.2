@@ -37,7 +37,7 @@
       <div class="text-center mb-4">
         <i class="fas fa-tools fa-3x text-primary mb-3"></i>
         <h4 class="fw-bold mb-1" data-i18n="appTitle">Maintenance System</h4>
-        <span class="badge bg-primary-subtle text-primary border rounded-pill px-2 font-monospace" style="font-size: 0.7rem;">v47</span>
+        <span class="badge bg-primary-subtle text-primary border rounded-pill px-2 font-monospace" style="font-size: 0.7rem;">v48</span>
       </div>
 
       <!-- Language Switcher Login -->
@@ -136,7 +136,7 @@
         </button>
         <div class="d-flex align-items-center">
           <span class="navbar-brand mb-0 h1 fw-bold text-primary me-2" data-i18n="appTitleShort">MMS Fac2</span>
-          <span class="badge bg-primary-subtle text-primary border rounded-pill px-2 py-1 font-monospace" style="font-size: 0.65rem;">v47</span>
+          <span class="badge bg-primary-subtle text-primary border rounded-pill px-2 py-1 font-monospace" style="font-size: 0.65rem;">v48</span>
         </div>
         <div class="ms-auto d-flex align-items-center">
           <i class="fas fa-globe text-primary me-2"></i>
@@ -208,14 +208,28 @@
 
                 <div class="row mb-4">
                   <div class="col-md-6 mb-3 mb-md-0">
-                    <label class="form-label fw-bold"><i class="fas fa-camera me-1"></i> <span data-i18n="ticketImage1">รูปภาพประกอบ 1</span> <small class="text-muted fw-normal">(Optional)</small></label>
-                    <input type="file" id="ticketImage1" class="form-control form-control-sm" accept="image/*">
-                    <div class="form-text small" style="font-size: 0.7rem;" data-i18n="maxSize2mb">(ไม่เกิน 2MB)</div>
+                    <label class="form-label fw-bold"><i class="fas fa-camera me-1"></i> <span data-i18n="ticketImage1">รูปภาพประกอบ 1</span> <small class="text-muted fw-normal" data-i18n="optionalLabel">(ไม่บังคับ)</small></label>
+                    <div class="input-group input-group-sm">
+                      <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('ticketImage1').click()">
+                        <i class="fas fa-paperclip me-1"></i><span data-i18n="btnChooseFile">เลือกไฟล์</span>
+                      </button>
+                      <span class="form-control form-control-sm text-truncate bg-white text-muted" id="ticketImage1_label" data-i18n="noFileChosen">ยังไม่ได้เลือกไฟล์</span>
+                      <button class="btn btn-outline-danger d-none" type="button" id="ticketImage1_clear" title="ล้างรูป" onclick="clearCustomFile('ticketImage1')"><i class="fas fa-times"></i></button>
+                    </div>
+                    <input type="file" id="ticketImage1" class="d-none" accept="image/*">
+                    <div class="form-text small" style="font-size: 0.7rem;" data-i18n="autoCompressHint">* รองรับทุกขนาด (ย่อและบีบอัดรูปให้อัตโนมัติ)</div>
                   </div>
                   <div class="col-md-6">
-                    <label class="form-label fw-bold"><i class="fas fa-camera me-1"></i> <span data-i18n="ticketImage2">รูปภาพประกอบ 2</span> <small class="text-muted fw-normal">(Optional)</small></label>
-                    <input type="file" id="ticketImage2" class="form-control form-control-sm" accept="image/*">
-                    <div class="form-text small" style="font-size: 0.7rem;" data-i18n="maxSize2mb">(ไม่เกิน 2MB)</div>
+                    <label class="form-label fw-bold"><i class="fas fa-camera me-1"></i> <span data-i18n="ticketImage2">รูปภาพประกอบ 2</span> <small class="text-muted fw-normal" data-i18n="optionalLabel">(ไม่บังคับ)</small></label>
+                    <div class="input-group input-group-sm">
+                      <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('ticketImage2').click()">
+                        <i class="fas fa-paperclip me-1"></i><span data-i18n="btnChooseFile">เลือกไฟล์</span>
+                      </button>
+                      <span class="form-control form-control-sm text-truncate bg-white text-muted" id="ticketImage2_label" data-i18n="noFileChosen">ยังไม่ได้เลือกไฟล์</span>
+                      <button class="btn btn-outline-danger d-none" type="button" id="ticketImage2_clear" title="ล้างรูป" onclick="clearCustomFile('ticketImage2')"><i class="fas fa-times"></i></button>
+                    </div>
+                    <input type="file" id="ticketImage2" class="d-none" accept="image/*">
+                    <div class="form-text small" style="font-size: 0.7rem;" data-i18n="autoCompressHint">* รองรับทุกขนาด (ย่อและบีบอัดรูปให้อัตโนมัติ)</div>
                   </div>
                 </div>
 
@@ -286,14 +300,28 @@
                     
                     <div class="row mb-3">
                       <div class="col-6">
-                        <label class="form-label small fw-bold"><i class="fas fa-camera me-1"></i> <span data-i18n="imgBefore">ภาพก่อนซ่อม</span></label>
-                        <input class="form-control form-control-sm" type="file" id="updBeforeImage" accept="image/*">
-                        <small class="text-muted" style="font-size:0.7rem;" data-i18n="maxSize2mb">(ไม่เกิน 2MB)</small>
+                        <label class="form-label small fw-bold"><i class="fas fa-camera me-1"></i> <span data-i18n="imgBefore">ภาพก่อนซ่อม</span> <small class="text-muted fw-normal" data-i18n="optionalLabel">(ไม่บังคับ)</small></label>
+                        <div class="input-group input-group-sm">
+                          <button class="btn btn-outline-secondary btn-sm" type="button" onclick="document.getElementById('updBeforeImage').click()">
+                            <i class="fas fa-paperclip me-1"></i><span data-i18n="btnChooseFile">เลือกไฟล์</span>
+                          </button>
+                          <span class="form-control form-control-sm text-truncate bg-white text-muted" id="updBeforeImage_label" data-i18n="noFileChosen">ยังไม่ได้เลือกไฟล์</span>
+                          <button class="btn btn-outline-danger btn-sm d-none" type="button" id="updBeforeImage_clear" title="ล้างรูป" onclick="clearCustomFile('updBeforeImage')"><i class="fas fa-times"></i></button>
+                        </div>
+                        <input class="d-none" type="file" id="updBeforeImage" accept="image/*">
+                        <small class="text-muted" style="font-size:0.7rem;" data-i18n="autoCompressHint">* รองรับทุกขนาด (ย่อขนาดอัตโนมัติ)</small>
                       </div>
                       <div class="col-6">
-                        <label class="form-label small fw-bold"><i class="fas fa-camera me-1"></i> <span data-i18n="imgAfter">ภาพหลังซ่อม</span></label>
-                        <input class="form-control form-control-sm" type="file" id="updAfterImage" accept="image/*">
-                        <small class="text-muted" style="font-size:0.7rem;" data-i18n="maxSize2mb">(ไม่เกิน 2MB)</small>
+                        <label class="form-label small fw-bold"><i class="fas fa-camera me-1"></i> <span data-i18n="imgAfter">ภาพหลังซ่อม</span> <small class="text-muted fw-normal" data-i18n="optionalLabel">(ไม่บังคับ)</small></label>
+                        <div class="input-group input-group-sm">
+                          <button class="btn btn-outline-secondary btn-sm" type="button" onclick="document.getElementById('updAfterImage').click()">
+                            <i class="fas fa-paperclip me-1"></i><span data-i18n="btnChooseFile">เลือกไฟล์</span>
+                          </button>
+                          <span class="form-control form-control-sm text-truncate bg-white text-muted" id="updAfterImage_label" data-i18n="noFileChosen">ยังไม่ได้เลือกไฟล์</span>
+                          <button class="btn btn-outline-danger btn-sm d-none" type="button" id="updAfterImage_clear" title="ล้างรูป" onclick="clearCustomFile('updAfterImage')"><i class="fas fa-times"></i></button>
+                        </div>
+                        <input class="d-none" type="file" id="updAfterImage" accept="image/*">
+                        <small class="text-muted" style="font-size:0.7rem;" data-i18n="autoCompressHint">* รองรับทุกขนาด (ย่อขนาดอัตโนมัติ)</small>
                       </div>
                     </div>
                     
