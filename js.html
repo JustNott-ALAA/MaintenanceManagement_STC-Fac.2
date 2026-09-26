@@ -803,13 +803,15 @@
           } else {
             machines.forEach(m => {
               const statusBadge = m.status ? `<span class="badge ${m.status.toLowerCase() === 'active' ? 'bg-success' : 'bg-secondary'}">${m.status}</span>` : '';
+              const mcModel = (m.details && m.details.mcModel) ? String(m.details.mcModel).trim() : '';
+              const displayName = mcModel ? `${mcModel}_${m.name}` : m.name;
               mList.innerHTML += `
                 <div class="col-md-6 col-lg-4 mb-4">
                   <div class="card shadow-sm border-0 rounded-4 h-100">
                     <div class="card-body">
                       <div class="d-flex justify-content-between align-items-start mb-3">
                         <div>
-                          <h5 class="fw-bold mb-1"><i class="fas fa-industry me-2 text-primary"></i> ${m.name}</h5>
+                          <h5 class="fw-bold mb-1"><i class="fas fa-industry me-2 text-primary"></i> ${displayName}</h5>
                         </div>
                         ${statusBadge}
                       </div>
