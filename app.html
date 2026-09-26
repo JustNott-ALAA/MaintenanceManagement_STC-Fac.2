@@ -36,8 +36,9 @@
     <div class="card shadow-lg p-4 login-card rounded-4">
       <div class="text-center mb-4">
         <i class="fas fa-tools fa-3x text-primary mb-3"></i>
-        <h4 class="fw-bold mb-1" data-i18n="appTitle">Maintenance System</h4>
-        <span class="badge bg-primary-subtle text-primary border rounded-pill px-2 font-monospace" style="font-size: 0.7rem;">v48</span>
+        <h4 class="fw-bold mb-1" id="loginMainTitle">ระบบจัดการงานซ่อมบำรุง Fac.2</h4>
+        <div class="text-muted small mb-2" id="loginSubTitle">Maintenance Management System Fac.2 / 유지보수 관리 시스템 Fac.2</div>
+        <span class="badge bg-primary-subtle text-primary border rounded-pill px-2 font-monospace" style="font-size: 0.7rem;">v49</span>
       </div>
 
       <!-- Language Switcher Login -->
@@ -90,7 +91,7 @@
     <!-- Sidebar -->
     <nav id="sidebar" class="bg-dark text-white p-3 vh-100 position-fixed">
       <div class="sidebar-header d-flex justify-content-between align-items-center mb-4 mt-2">
-        <h5 class="mb-0 fw-bold"><i class="fas fa-wrench me-2 text-primary"></i> <span class="sidebar-text" data-i18n="appTitleShort">MMS</span></h5>
+        <h5 class="mb-0 fw-bold"><i class="fas fa-wrench me-2 text-primary"></i> <span class="sidebar-text">MMS Fac.2</span></h5>
         <button id="toggleSidebar" class="btn btn-sm btn-outline-light border-0 d-md-none"><i class="fas fa-times"></i></button>
       </div>
       
@@ -134,9 +135,12 @@
         <button type="button" id="sidebarCollapse" class="btn btn-light border-0 d-md-none me-2">
           <i class="fas fa-bars"></i>
         </button>
-        <div class="d-flex align-items-center">
-          <span class="navbar-brand mb-0 h1 fw-bold text-primary me-2" data-i18n="appTitleShort">MMS Fac2</span>
-          <span class="badge bg-primary-subtle text-primary border rounded-pill px-2 py-1 font-monospace" style="font-size: 0.65rem;">v48</span>
+        <div class="d-flex align-items-center me-auto">
+          <div class="me-2" id="navbarTitleContainer">
+            <div class="fw-bold text-primary" style="font-size: 0.95rem; line-height: 1.25;" id="navbarMainTitle">ระบบจัดการงานซ่อมบำรุง Fac.2</div>
+            <div class="text-muted" style="font-size: 0.72rem; line-height: 1.2;" id="navbarSubTitle">Maintenance Management System Fac.2 / 유지보수 관리 시스템 Fac.2</div>
+          </div>
+          <span class="badge bg-primary-subtle text-primary border rounded-pill px-2 py-1 font-monospace align-self-center" style="font-size: 0.65rem;">v49</span>
         </div>
         <div class="ms-auto d-flex align-items-center">
           <i class="fas fa-globe text-primary me-2"></i>

@@ -343,6 +343,32 @@
       urgOpt.innerText = i18n[lang].urgencyPlaceholder;
     }
 
+    // Update navbar title & login title with full names displaying all 3 languages
+    const titles = {
+      th: {
+        main: "ระบบจัดการงานซ่อมบำรุง Fac.2",
+        sub: "Maintenance Management System Fac.2 / 유지보수 관리 시스템 Fac.2"
+      },
+      en: {
+        main: "Maintenance Management System Fac.2",
+        sub: "ระบบจัดการงานซ่อมบำรุง Fac.2 / 유지보수 관리 시스템 Fac.2"
+      },
+      ko: {
+        main: "유지보수 관리 시스템 Fac.2",
+        sub: "Maintenance Management System Fac.2 / ระบบจัดการงานซ่อมบำรุง Fac.2"
+      }
+    };
+    const tInfo = titles[lang] || titles.th;
+    const navMain = document.getElementById('navbarMainTitle');
+    const navSub = document.getElementById('navbarSubTitle');
+    if (navMain) navMain.innerText = tInfo.main;
+    if (navSub) navSub.innerText = tInfo.sub;
+
+    const loginMain = document.getElementById('loginMainTitle');
+    const loginSub = document.getElementById('loginSubTitle');
+    if (loginMain) loginMain.innerText = tInfo.main;
+    if (loginSub) loginSub.innerText = tInfo.sub;
+
     // Re-render timeline if on ticket detail page
     const detailPage = document.getElementById('page-ticketDetail');
     if (detailPage && !detailPage.classList.contains('d-none') && currentTicketDetailData) {
